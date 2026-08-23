@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LZebra ERP - Cloud Connected & Management</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .tab-btn { border-bottom: 3px solid transparent; }
+    .tab-active { border-bottom: 3px solid #16a34a !important; color: #15803d !important; font-weight: 700 !important; }
+    input, select { outline: none; }
+    input:focus, select:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.2); }
+
+    /* Clean Print & PDF Output */
+    @media print {
+      header, nav, form, .no-print, button, .action-col {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+      }
+      main {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .print-container {
+        display: block !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Header with Brand Logo -->
+  <header class="bg-slate-950 text-white px-6 py-3.5 flex flex-wrap justify-between items-center shadow-lg border-b border-emerald-900/40 no-print">
+    <div class="flex items-center gap-3.5">
+      <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-11 w-11 rounded-lg border border-emerald-500/40 shadow-sm object-cover bg-black" />
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400 font-extrabold">ERP</span></h1>
+          <span class="text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800">v2.4 PRO</span>
+        </div>
+        <p class="text-xs text-slate-400">Database: <span class="text-emerald-400 font-mono">ERP_malaya</span></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 mt-2 sm:mt-0">
+      <span id="db-status" class="text-xs bg-slate-900 px-3 py-1.5 rounded border border-slate-800 flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Connecting...
+      </span>
+      <button type="button" onclick="loadDataFromDb()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer transition shadow-sm">
+        <i class="fa-solid fa-arrows-rotate"></i> Sync Data
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b px-6 flex space-x-6 text-sm overflow-x-auto shadow-sm no-print">
+    <button type="button" onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3.5 px-2 tab-active text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-chart-line text-emerald-600"></i> DASHBOARD
+    </button>
+    <button type="button" onclick="switchTab('rm-master')" id="tab-rm-master" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-boxes-stacked"></i> RAW MATERIAL MASTER
+    </button>
+    <button type="button" onclick="switchTab('purchase-entry')" id="tab-purchase-entry" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-cart-shopping"></i> PURCHASE ENTRY
+    </button>
+    <button type="button" onclick="switchTab('product-master')" id="tab-product-master" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-shirt"></i> PRODUCT MASTER
+    </button>
+    <button type="button" onclick="switchTab('sales-entry')" id="tab-sales-entry" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-receipt text-emerald-600"></i> SALES ENTRY
+    </button>
+    <button type="button" onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
+      <i class="fa-solid fa-print text-indigo-600"></i> REPORTS & PRINT
+    </button>
+  </nav>
+
+  <!-- Main Workspace -->
+  <main class="p-6 max-w-[1600px] w-full mx-auto flex-1 space-y-6">
+
+    <!-- TAB 0: DASHBOARD -->
+    <section id="sec-dashboard" class="space-y-6 block">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Sales Revenue</p>
+            <h3 id="dash-total-sales" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
+            <p id="dash-sales-count" class="text-[11px] text-emerald-600 font-medium mt-1">0 Invoices generated</p>
+          </div>
+          <div class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-sack-dollar"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Purchases (RM)</p>
+            <h3 id="dash-total-purchase" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
+            <p id="dash-pur-count" class="text-[11px] text-slate-500 font-medium mt-1">0 Inward Shipments</p>
+          </div>
+          <div class="h-12 w-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-truck-ramp-box"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Profit / (Loss)</p>
+            <h3 id="dash-profit-loss" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
+            <p id="dash-profit-margin" class="text-[11px] font-bold text-slate-600 mt-1">Margin: 0.0%</p>
+          </div>
+          <div id="dash-profit-icon-box" class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock Valuation (RM + FG)</p>
+            <h3 id="dash-total-valuation" class="text-2xl font-black text-slate-900 mt-1">₹ 0.00</h3>
+            <p id="dash-lowstock-count" class="text-[11px] text-rose-600 font-semibold mt-1">0 Items need reorder</p>
+          </div>
+          <div class="h-12 w-12 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-warehouse"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div class="flex justify-between items-center pb-3 mb-3 border-b">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Low Stock & Reorder Monitor
+            </h3>
+            <span class="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-semibold">Priority Action</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
+                <tr>
+                  <th class="p-2.5">Type</th>
+                  <th class="p-2.5">Code</th>
+                  <th class="p-2.5">Name</th>
+                  <th class="p-2.5 text-center">Current</th>
+                  <th class="p-2.5 text-center">Reorder Lvl</th>
+                  <th class="p-2.5 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="dash-lowstock-tbody" class="divide-y text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div class="flex justify-between items-center pb-3 mb-3 border-b">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Recent Sales & Margins
+            </h3>
+            <span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">Live Feed</span>
+          </div>
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
+                <tr>
+                  <th class="p-2.5">Customer</th>
+                  <th class="p-2.5">Product</th>
+                  <th class="p-2.5 text-center">Qty</th>
+                  <th class="p-2.5">Revenue</th>
+                  <th class="p-2.5 text-right">Gross Profit</th>
+                </tr>
+              </thead>
+              <tbody id="dash-recentsales-tbody" class="divide-y text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: RAW MATERIAL MASTER -->
+    <section id="sec-rm-master" class="space-y-5 hidden">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-emerald-600"></i> Add New Raw Material Master
+        </h2>
+        <form id="rmForm" onsubmit="saveRawMaterial(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="font-semibold text-slate-600">RM CODE *</label>
+            <input required id="rm_code" placeholder="e.g. RM-FAB-01" class="mt-1 w-full border p-2 rounded uppercase font-mono">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">CATEGORY</label>
+            <input id="rm_category" placeholder="Fabric, Trims, etc." class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">UNIT *</label>
+            <input required id="rm_unit" placeholder="Meters, Pcs, Kg" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SUPPLIER</label>
+            <input id="rm_supplier" placeholder="Supplier Name" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">RAW MATERIAL NAME *</label>
+            <input required id="rm_name" placeholder="Full descriptive name" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">PURCHASE RATE PER UNIT</label>
+            <input type="number" step="0.01" id="rm_rate" value="0" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">GST %</label>
+            <input type="number" step="0.1" id="rm_gst" value="5" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">OPENING STOCK</label>
+            <input type="number" step="0.01" id="rm_opening" value="0" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">REORDER LEVEL</label>
+            <input type="number" step="0.01" id="rm_reorder" value="10" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">LOCATION</label>
+            <input id="rm_location" placeholder="Rack / Shelf" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">BATCH NO.</label>
+            <input id="rm_batch" placeholder="Batch / Lot #" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">PURCHASE DATE</label>
+            <input type="date" id="rm_pdate" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">EXPIRY DATE</label>
+            <input type="date" id="rm_edate" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="flex items-end sm:col-span-2">
+            <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
+              Save to Master (Cloud DB)
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Raw Material Master Sheet</h3>
+          <span id="rm-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Items</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">RM CODE</th>
+                <th class="p-3">CATEGORY</th>
+                <th class="p-3">UNIT</th>
+                <th class="p-3">SUPPLIER</th>
+                <th class="p-3">RAW MATERIAL NAME</th>
+                <th class="p-3">RATE / UNIT</th>
+                <th class="p-3">GST %</th>
+                <th class="p-3">OPENING STOK</th>
+                <th class="p-3 bg-emerald-50 text-emerald-900 font-bold">CURRENT STOK</th>
+                <th class="p-3">REORDER LEVEL</th>
+                <th class="p-3">LOCATION</th>
+                <th class="p-3">BATCH NO.</th>
+                <th class="p-3">PURCHASE DATE</th>
+                <th class="p-3">EXPIRY DATE</th>
+                <th class="p-3">STATUS</th>
+                <th class="p-3 text-center action-col">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="rm-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: PURCHASE ENTRY -->
+    <section id="sec-purchase-entry" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
+          <i class="fa-solid fa-cart-flatbed text-emerald-600"></i> New Raw Material Purchase Entry
+        </h2>
+        <form id="purchaseForm" onsubmit="savePurchase(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="font-semibold text-slate-600">RM CODE (LOOKUP) *</label>
+            <select required id="pur_rm_code" onchange="autoFillRmPurchase()" class="mt-1 w-full border p-2 rounded bg-slate-50 font-mono font-medium">
+              <option value="">-- Select RM Code --</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">RAW MATERIAL NAME (AUTO)</label>
+            <input readonly id="pur_rm_name" class="mt-1 w-full border p-2 rounded bg-slate-100 font-medium">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SUPPLIER</label>
+            <input required id="pur_supplier" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">UNIT (AUTO)</label>
+            <input readonly id="pur_unit" class="mt-1 w-full border p-2 rounded bg-slate-100">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">QUANTITY *</label>
+            <input required type="number" step="0.01" id="pur_qty" oninput="calcPurTotal()" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">PURCHASE RATE</label>
+            <input required type="number" step="0.01" id="pur_rate" oninput="calcPurTotal()" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">GST %</label>
+            <input type="number" step="0.1" id="pur_gst" oninput="calcPurTotal()" value="5" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">TOTAL AMOUNT (INCL. GST)</label>
+            <input readonly id="pur_total" class="mt-1 w-full border p-2 rounded bg-slate-100 font-bold text-emerald-700">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">BATCH NO.</label>
+            <input id="pur_batch" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">PURCHASE DATE</label>
+            <input type="date" id="pur_pdate" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">EXPIRY DATE</label>
+            <input type="date" id="pur_edate" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">REMARKS</label>
+            <input id="pur_remarks" placeholder="Invoice details, remarks, etc." class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="flex items-end sm:col-span-2">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
+              Log Purchase & Update Cloud DB
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Purchase Entry Register</h3>
+          <span id="purchase-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Entries</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">SUPPLIER</th>
+                <th class="p-3">RM CODE</th>
+                <th class="p-3">RAW MATERIAL NAME</th>
+                <th class="p-3">QUANTITY</th>
+                <th class="p-3">UNIT</th>
+                <th class="p-3">PURCHASE RATE</th>
+                <th class="p-3">GST %</th>
+                <th class="p-3 font-bold text-slate-800">TOTAL AMOUNT</th>
+                <th class="p-3">BATCH NO.</th>
+                <th class="p-3">PURCHASE DATE</th>
+                <th class="p-3">EXPIRY DATE</th>
+                <th class="p-3">STATUS</th>
+                <th class="p-3">REMARKS</th>
+                <th class="p-3 text-center action-col">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="purchase-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PRODUCT MASTER -->
+    <section id="sec-product-master" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
+          <i class="fa-solid fa-tag text-emerald-600"></i> Add Finished Product Master
+        </h2>
+        <form id="prodForm" onsubmit="saveProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="font-semibold text-slate-600">PRODUCT CODE *</label>
+            <input required id="prd_code" placeholder="e.g. FG-TSHIRT-01" class="mt-1 w-full border p-2 rounded uppercase font-mono">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">CATEGORY</label>
+            <input id="prd_category" placeholder="Apparel, Formal, etc." class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">UNIT *</label>
+            <input required id="prd_unit" placeholder="Pcs, Box, Set" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">PRODUCT NAME *</label>
+            <input required id="prd_name" placeholder="Full finished item name" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SELLING RATE PER UNIT</label>
+            <input type="number" step="0.01" id="prd_rate" value="0" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">GST %</label>
+            <input type="number" step="0.1" id="prd_gst" value="12" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">OPENING STOCK</label>
+            <input type="number" step="1" id="prd_opening" value="0" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">REORDER LEVEL</label>
+            <input type="number" step="1" id="prd_reorder" value="5" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">LOCATION</label>
+            <input id="prd_location" placeholder="Warehouse Bay" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="flex items-end sm:col-span-2">
+            <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
+              Save Product to DB
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Product Master Sheet</h3>
+          <span id="product-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Products</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">PRODUCT CODE</th>
+                <th class="p-3">CATEGORY</th>
+                <th class="p-3">UNIT</th>
+                <th class="p-3">PRODUCT NAME</th>
+                <th class="p-3">SELLING RATE</th>
+                <th class="p-3">GST %</th>
+                <th class="p-3">OPENING STOK</th>
+                <th class="p-3 bg-emerald-50 text-emerald-900 font-bold">CURRENT STOK</th>
+                <th class="p-3">REORDER LEVEL</th>
+                <th class="p-3">LOCATION</th>
+                <th class="p-3">STATUS</th>
+                <th class="p-3 text-center action-col">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="prd-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SALES ENTRY -->
+    <section id="sec-sales-entry" class="hidden space-y-5">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
+          <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i> New Sales Entry (Dispatches Finished Goods)
+        </h2>
+        <form id="salesForm" onsubmit="saveSale(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="font-semibold text-slate-600">PRODUCT CODE (LOOKUP) *</label>
+            <select required id="sale_prd_code" onchange="autoFillProductSale()" class="mt-1 w-full border p-2 rounded bg-slate-50 font-mono font-medium">
+              <option value="">-- Select Product --</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">PRODUCT NAME (AUTO)</label>
+            <input readonly id="sale_prd_name" class="mt-1 w-full border p-2 rounded bg-slate-100 font-medium">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">CUSTOMER NAME *</label>
+            <input required id="sale_customer" placeholder="Client / Retailer" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">UNIT (AUTO)</label>
+            <input readonly id="sale_unit" class="mt-1 w-full border p-2 rounded bg-slate-100">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">QUANTITY SOLD *</label>
+            <input required type="number" step="1" min="1" id="sale_qty" oninput="calcSaleTotal()" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SELLING RATE (PER UNIT)</label>
+            <input required type="number" step="0.01" id="sale_rate" oninput="calcSaleTotal()" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">GST %</label>
+            <input type="number" step="0.1" id="sale_gst" oninput="calcSaleTotal()" value="12" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">TOTAL SALE AMOUNT</label>
+            <input readonly id="sale_total" class="mt-1 w-full border p-2 rounded bg-slate-100 font-bold text-emerald-700">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SALE DATE</label>
+            <input type="date" id="sale_date" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">REMARKS</label>
+            <input id="sale_remarks" placeholder="Invoice #, Dispatch note, etc." class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="flex items-end sm:col-span-2">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
+              Record Sale & Dispatch
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Sales & Revenue Register</h3>
+          <span id="sales-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Invoices</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">DATE</th>
+                <th class="p-3">CUSTOMER</th>
+                <th class="p-3">PRODUCT CODE</th>
+                <th class="p-3">PRODUCT NAME</th>
+                <th class="p-3 text-center">QTY</th>
+                <th class="p-3">RATE</th>
+                <th class="p-3">GST %</th>
+                <th class="p-3 font-bold text-slate-900">TOTAL SALE</th>
+                <th class="p-3 text-right text-emerald-700 font-bold">GROSS PROFIT</th>
+                <th class="p-3">REMARKS</th>
+                <th class="p-3 text-center action-col">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="sales-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: REPORTS & PRINT GENERATOR -->
+    <section id="sec-reports" class="hidden space-y-6">
+      
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm no-print">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-file-invoice text-emerald-600"></i> LZebra Statement & Report Generator
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Filter by statement type and fiscal year, then print or export to PDF.</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <div>
+              <label class="text-[11px] font-semibold text-slate-500 uppercase block mb-1">Report Type</label>
+              <select id="report_type" onchange="generateReport()" class="border p-2 rounded text-xs bg-slate-50 font-medium">
+                <option value="summary">Executive P&L Summary (All Years / Annual)</option>
+                <option value="sales">Detailed Sales Report</option>
+                <option value="purchase">Detailed Purchase Report</option>
+                <option value="inventory">Comprehensive Inventory Valuation Statement</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-semibold text-slate-500 uppercase block mb-1">Filter Year</label>
+              <select id="report_year" onchange="generateReport()" class="border p-2 rounded text-xs bg-slate-50 font-medium">
+                <option value="ALL">All Available Years</option>
+                <option value="2026" selected>Year 2026</option>
+                <option value="2025">Year 2025</option>
+                <option value="2027">Year 2027</option>
+              </select>
+            </div>
+
+            <div class="pt-5">
+              <button type="button" onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition">
+                <i class="fa-solid fa-print"></i> Print Statement / Save PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable Report Canvas -->
+      <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
+        <!-- Dynamic Report Injected Here -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // 1. Standalone Tab Navigation
+    window.switchTab = function(tabId) {
+      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('sec-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (sec) {
+          sec.classList.remove('block');
+          sec.classList.add('hidden');
+        }
+        if (btn) {
+          btn.classList.remove('tab-active');
+          btn.classList.remove('text-slate-700');
+          btn.classList.add('text-slate-500');
+        }
+      });
+
+      const activeSec = document.getElementById('sec-' + tabId);
+      const activeBtn = document.getElementById('tab-' + tabId);
+      if (activeSec) {
+        activeSec.classList.remove('hidden');
+        activeSec.classList.add('block');
+      }
+      if (activeBtn) {
+        activeBtn.classList.add('tab-active');
+        activeBtn.classList.add('text-slate-700');
+        activeBtn.classList.remove('text-slate-500');
+      }
+
+      if (tabId === 'reports') {
+        generateReport();
+      }
+    };
+
+    // 2. Database Config & Authentication
+    const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
+    const DELETE_PASSWORD = "M@lay@!3";
+
+    let DB = { rawMaterials: [], purchases: [], products: [], sales: [] };
+
+    function getHeaders() {
+      return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      };
+    }
+
+    function verifyPassword() {
+      const pass = prompt("Enter Admin Password to delete this record:");
+      if (pass === null) return false;
+      if (pass === DELETE_PASSWORD) return true;
+      alert("Incorrect password! Action aborted.");
+      return false;
+    }
+
+    // 3. Central Sync & Data Loader
+    window.loadDataFromDb = async function() {
+      const statusEl = document.getElementById('db-status');
+      statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
+
+      try {
+        const [rmRes, purRes, prdRes, saleRes] = await Promise.all([
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?select=*&order=created_at.asc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.asc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.asc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.asc`, { headers: getHeaders() })
+        ]);
+
+        if (!rmRes.ok || !purRes.ok || !prdRes.ok) throw new Error('Database Sync Failed');
+
+        DB.rawMaterials = await rmRes.json();
+        DB.purchases = await purRes.json();
+        DB.products = await prdRes.json();
+        DB.sales = saleRes.ok ? await saleRes.json() : [];
+
+        renderAll();
+        statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Connected`;
+      } catch (err) {
+        console.error("Supabase API Error:", err);
+        statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error connecting`;
+      }
+    };
+
+    // 4. Stock Computation
+    function getRmStock(rmCode, openingStock) {
+      const totalPurchased = DB.purchases
+        .filter(p => p.rm_code === rmCode)
+        .reduce((sum, p) => sum + Number(p.qty), 0);
+      return Number(openingStock) + totalPurchased;
+    }
+
+    function getProductStock(prodCode, openingStock) {
+      const totalSold = DB.sales
+        .filter(s => s.product_code === prodCode)
+        .reduce((sum, s) => sum + Number(s.qty), 0);
+      return Number(openingStock) - totalSold;
+    }
+
+    // 5. Dashboard Calculations & Rendering
+    function renderDashboard() {
+      const totalSalesRevenue = DB.sales.reduce((acc, s) => acc + Number(s.total_sale || 0), 0);
+      const totalPurchasesCost = DB.purchases.reduce((acc, p) => acc + Number(p.total || 0), 0);
+      
+      const rmValuation = DB.rawMaterials.reduce((acc, rm) => acc + (getRmStock(rm.code, rm.opening) * Number(rm.rate || 0)), 0);
+      const fgValuation = DB.products.reduce((acc, fg) => acc + (getProductStock(fg.code, fg.opening) * Number(fg.rate || 0)), 0);
+      const totalValuation = rmValuation + fgValuation;
+
+      const recordedGrossProfit = DB.sales.reduce((acc, s) => acc + Number(s.gross_profit || 0), 0);
+      const grossProfit = recordedGrossProfit !== 0 ? recordedGrossProfit : (totalSalesRevenue - (totalSalesRevenue * 0.40));
+      const marginPct = totalSalesRevenue > 0 ? ((grossProfit / totalSalesRevenue) * 100).toFixed(1) : "0.0";
+
+      let lowStockCount = 0;
+      const lowStockItems = [];
+
+      DB.rawMaterials.forEach(rm => {
+        const cur = getRmStock(rm.code, rm.opening);
+        if (cur <= Number(rm.reorder)) {
+          lowStockCount++;
+          lowStockItems.push({ type: 'RM', code: rm.code, name: rm.name, cur, reorder: rm.reorder, unit: rm.unit });
+        }
+      });
+
+      DB.products.forEach(prd => {
+        const cur = getProductStock(prd.code, prd.opening);
+        if (cur <= Number(prd.reorder)) {
+          lowStockCount++;
+          lowStockItems.push({ type: 'FG', code: prd.code, name: prd.name, cur, reorder: prd.reorder, unit: prd.unit });
+        }
+      });
+
+      document.getElementById('dash-total-sales').textContent = `₹ ${totalSalesRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('dash-sales-count').textContent = `${DB.sales.length} Invoices generated`;
+
+      document.getElementById('dash-total-purchase').textContent = `₹ ${totalPurchasesCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('dash-pur-count').textContent = `${DB.purchases.length} Inward Shipments`;
+
+      document.getElementById('dash-profit-loss').textContent = `₹ ${grossProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('dash-profit-margin').textContent = `Gross Margin: ${marginPct}%`;
+      
+      const profitIconBox = document.getElementById('dash-profit-icon-box');
+      if (grossProfit < 0) {
+        profitIconBox.className = "h-12 w-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xl";
+        profitIconBox.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i>`;
+      } else {
+        profitIconBox.className = "h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl";
+        profitIconBox.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i>`;
+      }
+
+      document.getElementById('dash-total-valuation').textContent = `₹ ${totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('dash-lowstock-count').textContent = `${lowStockCount} Items need reorder`;
+
+      const lowStockTbody = document.getElementById('dash-lowstock-tbody');
+      lowStockTbody.innerHTML = '';
+      if (lowStockItems.length === 0) {
+        lowStockTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-emerald-600 font-semibold">✅ All inventory levels are optimal!</td></tr>`;
+      } else {
+        lowStockItems.forEach(item => {
+          lowStockTbody.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${item.type === 'RM' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-800'}">${item.type}</span></td>
+              <td class="p-2.5 font-mono font-bold text-slate-800">${item.code}</td>
+              <td class="p-2.5 font-medium">${item.name}</td>
+              <td class="p-2.5 text-center font-bold text-rose-600">${item.cur} ${item.unit}</td>
+              <td class="p-2.5 text-center text-slate-500">${item.reorder} ${item.unit}</td>
+              <td class="p-2.5 text-center"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">REORDER</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      const salesFeedTbody = document.getElementById('dash-recentsales-tbody');
+      salesFeedTbody.innerHTML = '';
+      const recentSales = [...DB.sales].reverse().slice(0, 5);
+      if (recentSales.length === 0) {
+        salesFeedTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
+      } else {
+        recentSales.forEach(s => {
+          salesFeedTbody.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="p-2.5 font-semibold text-slate-800">${s.customer}</td>
+              <td class="p-2.5">${s.name}</td>
+              <td class="p-2.5 text-center font-bold">${s.qty}</td>
+              <td class="p-2.5 font-bold text-emerald-700">₹${Number(s.total_sale).toLocaleString()}</td>
+              <td class="p-2.5 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    // 6. Section Renderers
+    function renderRawMaterials() {
+      const tbody = document.getElementById('rm-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('rm-count-badge').textContent = `${DB.rawMaterials.length} Items`;
+
+      DB.rawMaterials.forEach((rm) => {
+        const currentStock = getRmStock(rm.code, rm.opening);
+        const isReorder = currentStock <= Number(rm.reorder);
+        const statusBadge = isReorder
+          ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">⚠️ REORDER</span>`
+          : `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold text-[10px]">✅ OPTIMAL</span>`;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono font-bold text-emerald-700">${rm.code}</td>
+            <td class="p-3">${rm.category || '-'}</td>
+            <td class="p-3">${rm.unit}</td>
+            <td class="p-3">${rm.supplier || '-'}</td>
+            <td class="p-3 font-medium">${rm.name}</td>
+            <td class="p-3">₹${Number(rm.rate).toFixed(2)}</td>
+            <td class="p-3">${rm.gst}%</td>
+            <td class="p-3">${rm.opening}</td>
+            <td class="p-3 bg-emerald-50 font-bold text-emerald-950">${currentStock}</td>
+            <td class="p-3">${rm.reorder}</td>
+            <td class="p-3">${rm.location || '-'}</td>
+            <td class="p-3">${rm.batch || '-'}</td>
+            <td class="p-3">${rm.pdate || '-'}</td>
+            <td class="p-3">${rm.edate || '-'}</td>
+            <td class="p-3">${statusBadge}</td>
+            <td class="p-3 text-center action-col">
+              <button type="button" onclick="deleteRM('${rm.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      const sel = document.getElementById('pur_rm_code');
+      sel.innerHTML = '<option value="">-- Select RM Code --</option>';
+      DB.rawMaterials.forEach(rm => {
+        sel.innerHTML += `<option value="${rm.code}">${rm.code} | ${rm.name}</option>`;
+      });
+    }
+
+    function renderPurchases() {
+      const tbody = document.getElementById('purchase-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('purchase-count-badge').textContent = `${DB.purchases.length} Entries`;
+
+      DB.purchases.forEach((p) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-medium">${p.supplier}</td>
+            <td class="p-3 font-mono font-bold text-emerald-700">${p.rm_code}</td>
+            <td class="p-3">${p.name}</td>
+            <td class="p-3 font-semibold text-emerald-700">${p.qty}</td>
+            <td class="p-3">${p.unit}</td>
+            <td class="p-3">₹${Number(p.rate).toFixed(2)}</td>
+            <td class="p-3">${p.gst}%</td>
+            <td class="p-3 font-bold text-slate-900">₹${Number(p.total).toLocaleString()}</td>
+            <td class="p-3">${p.batch || '-'}</td>
+            <td class="p-3">${p.pdate || '-'}</td>
+            <td class="p-3">${p.edate || '-'}</td>
+            <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold">Received</span></td>
+            <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
+            <td class="p-3 text-center action-col">
+              <button type="button" onclick="deletePurchase('${p.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderProducts() {
+      const tbody = document.getElementById('prd-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('product-count-badge').textContent = `${DB.products.length} Products`;
+
+      DB.products.forEach((prd) => {
+        const curStock = getProductStock(prd.code, prd.opening);
+        const isReorder = curStock <= Number(prd.reorder);
+        const statusBadge = isReorder
+          ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">⚠️ LOW STOCK</span>`
+          : `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold text-[10px]">✅ IN STOCK</span>`;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono font-bold text-slate-900">${prd.code}</td>
+            <td class="p-3">${prd.category || '-'}</td>
+            <td class="p-3">${prd.unit}</td>
+            <td class="p-3 font-medium">${prd.name}</td>
+            <td class="p-3">₹${Number(prd.rate).toFixed(2)}</td>
+            <td class="p-3">${prd.gst}%</td>
+            <td class="p-3">${prd.opening}</td>
+            <td class="p-3 bg-emerald-50 font-bold text-emerald-950">${curStock}</td>
+            <td class="p-3">${prd.reorder}</td>
+            <td class="p-3">${prd.location || '-'}</td>
+            <td class="p-3">${statusBadge}</td>
+            <td class="p-3 text-center action-col">
+              <button type="button" onclick="deleteProduct('${prd.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+
+      const saleSelect = document.getElementById('sale_prd_code');
+      saleSelect.innerHTML = '<option value="">-- Select Product --</option>';
+      DB.products.forEach(p => {
+        saleSelect.innerHTML += `<option value="${p.code}">${p.code} | ${p.name}</option>`;
+      });
+    }
+
+    function renderSales() {
+      const tbody = document.getElementById('sales-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('sales-count-badge').textContent = `${DB.sales.length} Invoices`;
+
+      DB.sales.forEach((s) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3">${s.sale_date || '-'}</td>
+            <td class="p-3 font-semibold text-slate-800">${s.customer}</td>
+            <td class="p-3 font-mono font-bold text-slate-900">${s.product_code}</td>
+            <td class="p-3">${s.name}</td>
+            <td class="p-3 text-center font-bold">${s.qty} ${s.unit || ''}</td>
+            <td class="p-3">₹${Number(s.selling_rate).toFixed(2)}</td>
+            <td class="p-3">${s.gst}%</td>
+            <td class="p-3 font-bold text-slate-900">₹${Number(s.total_sale).toLocaleString()}</td>
+            <td class="p-3 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
+            <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
+            <td class="p-3 text-center action-col">
+              <button type="button" onclick="deleteSale('${s.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // 7. Dynamic Printable Report Generator
+    window.generateReport = function() {
+      const type = document.getElementById('report_type').value;
+      const year = document.getElementById('report_year').value;
+      const canvas = document.getElementById('print-canvas');
+
+      const filterByYear = (dateStr) => {
+        if (!dateStr || year === 'ALL') return true;
+        return dateStr.startsWith(year);
+      };
+
+      const filteredPurchases = DB.purchases.filter(p => filterByYear(p.pdate));
+      const filteredSales = DB.sales.filter(s => filterByYear(s.sale_date));
+
+      const totalPur = filteredPurchases.reduce((a, b) => a + Number(b.total || 0), 0);
+      const totalSal = filteredSales.reduce((a, b) => a + Number(b.total_sale || 0), 0);
+      const grossProf = filteredSales.reduce((a, b) => a + Number(b.gross_profit || (b.total_sale * 0.4)), 0);
+
+      let html = `
+        <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-center">
+          <div class="flex items-center gap-3.5">
+            <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-12 w-12 rounded-lg border border-slate-300 object-cover bg-black" />
+            <div>
+              <h1 class="text-2xl font-black tracking-wider text-slate-900">LZEBRA <span class="text-emerald-600 font-extrabold">ERP</span></h1>
+              <p class="text-xs text-slate-500 font-medium">Enterprise Management & Auditing Statement</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold text-emerald-700 uppercase tracking-wider">${type.toUpperCase()} REPORT</p>
+            <p class="text-xs text-slate-500">Period: <span class="font-bold text-slate-800">${year === 'ALL' ? 'All-Time Historical' : `Fiscal Year ${year}`}</span></p>
+            <p class="text-[10px] text-slate-400">Generated: ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      `;
+
+      if (type === 'summary') {
+        html += `
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="p-4 border rounded-lg bg-slate-50">
+              <span class="text-xs text-slate-500 font-bold uppercase">Total Purchases (RM)</span>
+              <p class="text-xl font-bold text-slate-900 mt-1">₹ ${totalPur.toLocaleString()}</p>
+              <p class="text-[10px] text-slate-500">${filteredPurchases.length} inward lots</p>
+            </div>
+            <div class="p-4 border rounded-lg bg-slate-50">
+              <span class="text-xs text-slate-500 font-bold uppercase">Total Sales Revenue</span>
+              <p class="text-xl font-bold text-emerald-700 mt-1">₹ ${totalSal.toLocaleString()}</p>
+              <p class="text-[10px] text-slate-500">${filteredSales.length} invoices cleared</p>
+            </div>
+            <div class="p-4 border rounded-lg bg-emerald-50 border-emerald-200">
+              <span class="text-xs text-emerald-800 font-bold uppercase">Estimated Gross Profit</span>
+              <p class="text-xl font-bold text-emerald-700 mt-1">₹ ${grossProf.toLocaleString()}</p>
+              <p class="text-[10px] text-emerald-600 font-semibold">Margin: ${totalSal > 0 ? ((grossProf/totalSal)*100).toFixed(1) : 0}%</p>
+            </div>
+          </div>
+
+          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Sales Activity Ledger</h3>
+          <table class="w-full text-xs text-left mb-6 border">
+            <thead class="bg-slate-100 font-bold">
+              <tr>
+                <th class="p-2 border">Date</th>
+                <th class="p-2 border">Customer</th>
+                <th class="p-2 border">Product</th>
+                <th class="p-2 border text-center">Qty</th>
+                <th class="p-2 border text-right">Sale Amount</th>
+                <th class="p-2 border text-right">Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredSales.map(s => `
+                <tr>
+                  <td class="p-2 border">${s.sale_date || '-'}</td>
+                  <td class="p-2 border font-medium">${s.customer}</td>
+                  <td class="p-2 border">${s.name}</td>
+                  <td class="p-2 border text-center">${s.qty}</td>
+                  <td class="p-2 border text-right font-bold">₹${Number(s.total_sale).toLocaleString()}</td>
+                  <td class="p-2 border text-right text-emerald-700 font-bold">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (type === 'sales') {
+        html += `
+          <table class="w-full text-xs text-left border">
+            <thead class="bg-slate-100 font-bold">
+              <tr>
+                <th class="p-2 border">Date</th>
+                <th class="p-2 border">Customer</th>
+                <th class="p-2 border">Code</th>
+                <th class="p-2 border">Product Name</th>
+                <th class="p-2 border text-center">Qty</th>
+                <th class="p-2 border text-right">Rate</th>
+                <th class="p-2 border text-right">GST %</th>
+                <th class="p-2 border text-right">Total Sale</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredSales.map(s => `
+                <tr>
+                  <td class="p-2 border">${s.sale_date || '-'}</td>
+                  <td class="p-2 border font-semibold">${s.customer}</td>
+                  <td class="p-2 border font-mono">${s.product_code}</td>
+                  <td class="p-2 border">${s.name}</td>
+                  <td class="p-2 border text-center">${s.qty}</td>
+                  <td class="p-2 border text-right">₹${Number(s.selling_rate).toFixed(2)}</td>
+                  <td class="p-2 border text-right">${s.gst}%</td>
+                  <td class="p-2 border text-right font-bold">₹${Number(s.total_sale).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+              <tr class="bg-slate-100 font-bold text-slate-900">
+                <td colspan="7" class="p-2 border text-right">GRAND TOTAL SALES:</td>
+                <td class="p-2 border text-right text-emerald-700">₹ ${totalSal.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+      } else if (type === 'purchase') {
+        html += `
+          <table class="w-full text-xs text-left border">
+            <thead class="bg-slate-100 font-bold">
+              <tr>
+                <th class="p-2 border">Date</th>
+                <th class="p-2 border">Supplier</th>
+                <th class="p-2 border">RM Code</th>
+                <th class="p-2 border">Material Name</th>
+                <th class="p-2 border text-center">Qty</th>
+                <th class="p-2 border text-right">Unit Rate</th>
+                <th class="p-2 border text-right">GST %</th>
+                <th class="p-2 border text-right">Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredPurchases.map(p => `
+                <tr>
+                  <td class="p-2 border">${p.pdate || '-'}</td>
+                  <td class="p-2 border font-medium">${p.supplier}</td>
+                  <td class="p-2 border font-mono">${p.rm_code}</td>
+                  <td class="p-2 border">${p.name}</td>
+                  <td class="p-2 border text-center">${p.qty} ${p.unit}</td>
+                  <td class="p-2 border text-right">₹${Number(p.rate).toFixed(2)}</td>
+                  <td class="p-2 border text-right">${p.gst}%</td>
+                  <td class="p-2 border text-right font-bold">₹${Number(p.total).toLocaleString()}</td>
+                </tr>
+              `).join('')}
+              <tr class="bg-slate-100 font-bold text-slate-900">
+                <td colspan="7" class="p-2 border text-right">GRAND TOTAL PURCHASES:</td>
+                <td class="p-2 border text-right text-emerald-700">₹ ${totalPur.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+      } else if (type === 'inventory') {
+        html += `
+          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Raw Materials Live Balance</h3>
+          <table class="w-full text-xs text-left border mb-6">
+            <thead class="bg-slate-100 font-bold">
+              <tr>
+                <th class="p-2 border">RM Code</th>
+                <th class="p-2 border">Name</th>
+                <th class="p-2 border text-center">Unit</th>
+                <th class="p-2 border text-center">Live Stock</th>
+                <th class="p-2 border text-right">Unit Cost</th>
+                <th class="p-2 border text-right">Total Valuation</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${DB.rawMaterials.map(rm => {
+                const stock = getRmStock(rm.code, rm.opening);
+                const val = stock * Number(rm.rate || 0);
+                return `
+                  <tr>
+                    <td class="p-2 border font-mono font-bold">${rm.code}</td>
+                    <td class="p-2 border">${rm.name}</td>
+                    <td class="p-2 border text-center">${rm.unit}</td>
+                    <td class="p-2 border text-center font-bold">${stock}</td>
+                    <td class="p-2 border text-right">₹${Number(rm.rate).toFixed(2)}</td>
+                    <td class="p-2 border text-right font-bold">₹${val.toLocaleString()}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Finished Goods Live Balance</h3>
+          <table class="w-full text-xs text-left border">
+            <thead class="bg-slate-100 font-bold">
+              <tr>
+                <th class="p-2 border">Product Code</th>
+                <th class="p-2 border">Product Name</th>
+                <th class="p-2 border text-center">Unit</th>
+                <th class="p-2 border text-center">Live Stock</th>
+                <th class="p-2 border text-right">Selling Price</th>
+                <th class="p-2 border text-right">Total Valuation</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${DB.products.map(prd => {
+                const stock = getProductStock(prd.code, prd.opening);
+                const val = stock * Number(prd.rate || 0);
+                return `
+                  <tr>
+                    <td class="p-2 border font-mono font-bold text-emerald-800">${prd.code}</td>
+                    <td class="p-2 border">${prd.name}</td>
+                    <td class="p-2 border text-center">${prd.unit}</td>
+                    <td class="p-2 border text-center font-bold">${stock}</td>
+                    <td class="p-2 border text-right">₹${Number(prd.rate).toFixed(2)}</td>
+                    <td class="p-2 border text-right font-bold">₹${val.toLocaleString()}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      html += `
+        <div class="mt-8 pt-6 border-t flex justify-between text-xs text-slate-500">
+          <div>Audited & Verified By: ___________________</div>
+          <div>Authorized Signatory (LZebra ERP): ___________________</div>
+        </div>
+      `;
+
+      canvas.innerHTML = html;
+    };
+
+    function renderAll() {
+      renderDashboard();
+      renderRawMaterials();
+      renderPurchases();
+      renderProducts();
+      renderSales();
+    }
+
+    // 8. Form Handlers & DB Operations
+    window.saveRawMaterial = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('rm_code').value.trim().toUpperCase();
+
+      const newRM = {
+        code,
+        category: document.getElementById('rm_category').value,
+        unit: document.getElementById('rm_unit').value,
+        supplier: document.getElementById('rm_supplier').value,
+        name: document.getElementById('rm_name').value,
+        rate: parseFloat(document.getElementById('rm_rate').value) || 0,
+        gst: parseFloat(document.getElementById('rm_gst').value) || 0,
+        opening: parseFloat(document.getElementById('rm_opening').value) || 0,
+        reorder: parseFloat(document.getElementById('rm_reorder').value) || 0,
+        location: document.getElementById('rm_location').value,
+        batch: document.getElementById('rm_batch').value,
+        pdate: document.getElementById('rm_pdate').value || null,
+        edate: document.getElementById('rm_edate').value || null,
+      };
+
+      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(newRM)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Error saving: " + (err.message || JSON.stringify(err)));
+        return;
+      }
+
+      document.getElementById('rmForm').reset();
+      loadDataFromDb();
+    };
+
+    window.autoFillRmPurchase = function() {
+      const code = document.getElementById('pur_rm_code').value;
+      const rm = DB.rawMaterials.find(r => r.code === code);
+      if (rm) {
+        document.getElementById('pur_rm_name').value = rm.name;
+        document.getElementById('pur_supplier').value = rm.supplier || '';
+        document.getElementById('pur_unit').value = rm.unit;
+        document.getElementById('pur_rate').value = rm.rate;
+        document.getElementById('pur_gst').value = rm.gst;
+        calcPurTotal();
+      }
+    };
+
+    window.calcPurTotal = function() {
+      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      document.getElementById('pur_total').value = '₹ ' + total.toFixed(2);
+    };
+
+    window.savePurchase = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('pur_rm_code').value;
+      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+
+      const newPurchase = {
+        supplier: document.getElementById('pur_supplier').value,
+        rm_code: code,
+        name: document.getElementById('pur_rm_name').value,
+        qty,
+        unit: document.getElementById('pur_unit').value,
+        rate,
+        gst,
+        total,
+        batch: document.getElementById('pur_batch').value,
+        pdate: document.getElementById('pur_pdate').value || null,
+        edate: document.getElementById('pur_edate').value || null,
+        remarks: document.getElementById('pur_remarks').value,
+      };
+
+      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(newPurchase)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Error logging purchase: " + (err.message || JSON.stringify(err)));
+        return;
+      }
+
+      document.getElementById('purchaseForm').reset();
+      loadDataFromDb();
+    };
+
+    window.saveProduct = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('prd_code').value.trim().toUpperCase();
+
+      const newProduct = {
+        code,
+        category: document.getElementById('prd_category').value,
+        unit: document.getElementById('prd_unit').value,
+        name: document.getElementById('prd_name').value,
+        rate: parseFloat(document.getElementById('prd_rate').value) || 0,
+        gst: parseFloat(document.getElementById('prd_gst').value) || 0,
+        opening: parseFloat(document.getElementById('prd_opening').value) || 0,
+        reorder: parseFloat(document.getElementById('prd_reorder').value) || 0,
+        location: document.getElementById('prd_location').value,
+      };
+
+      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/products`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(newProduct)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Error saving product: " + (err.message || JSON.stringify(err)));
+        return;
+      }
+
+      document.getElementById('prodForm').reset();
+      loadDataFromDb();
+    };
+
+    window.autoFillProductSale = function() {
+      const code = document.getElementById('sale_prd_code').value;
+      const prd = DB.products.find(p => p.code === code);
+      if (prd) {
+        document.getElementById('sale_prd_name').value = prd.name;
+        document.getElementById('sale_unit').value = prd.unit;
+        document.getElementById('sale_rate').value = prd.rate;
+        document.getElementById('sale_gst').value = prd.gst;
+        calcSaleTotal();
+      }
+    };
+
+    window.calcSaleTotal = function() {
+      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      document.getElementById('sale_total').value = '₹ ' + total.toFixed(2);
+    };
+
+    window.saveSale = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('sale_prd_code').value;
+      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      
+      const estimatedCogs = subtotal * 0.60;
+      const grossProfit = subtotal - estimatedCogs;
+
+      const newSale = {
+        customer: document.getElementById('sale_customer').value,
+        product_code: code,
+        name: document.getElementById('sale_prd_name').value,
+        qty,
+        unit: document.getElementById('sale_unit').value,
+        selling_rate: rate,
+        gst,
+        total_sale: total,
+        total_cogs: estimatedCogs,
+        gross_profit: grossProfit,
+        sale_date: document.getElementById('sale_date').value || new Date().toISOString().slice(0,10),
+        remarks: document.getElementById('sale_remarks').value,
+      };
+
+      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/sales`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(newSale)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Error recording sale: " + (err.message || JSON.stringify(err)));
+        return;
+      }
+
+      document.getElementById('salesForm').reset();
+      loadDataFromDb();
+      switchTab('dashboard');
+    };
+
+    // 9. Password Protected Deletions
+    window.deleteRM = async function(id) {
+      if (!verifyPassword()) return;
+      await fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
+      loadDataFromDb();
+    };
+
+    window.deletePurchase = async function(id) {
+      if (!verifyPassword()) return;
+      await fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
+      loadDataFromDb();
+    };
+
+    window.deleteProduct = async function(id) {
+      if (!verifyPassword()) return;
+      await fetch(`${SUPABASE_BASE_URL}/rest/v1/products?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
+      loadDataFromDb();
+    };
+
+    window.deleteSale = async function(id) {
+      if (!verifyPassword()) return;
+      await fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
+      loadDataFromDb();
+    };
+
+    // Auto-load on startup
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDataFromDb();
+    });
+  </script>
+</body>
+</html>
