@@ -552,7 +552,6 @@
 
     <!-- TAB 5: REPORTS & PRINT GENERATOR -->
     <section id="sec-reports" class="hidden space-y-6">
-      
       <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm no-print">
         <div class="flex flex-wrap justify-between items-center gap-4">
           <div>
@@ -593,16 +592,28 @@
       </div>
 
       <!-- Printable Report Canvas -->
-      <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-        <!-- Dynamic Report Injected Here -->
-      </div>
-
+      <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm"></div>
     </section>
 
   </main>
 
   <script>
-    // 1. Standalone Tab Navigation
+    // --- 1. CONFIGURATION ---
+    const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
+
+    let DB = { rawMaterials: [], purchases: [], products: [], sales: [] };
+
+    function getHeaders() {
+      return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      };
+    }
+
+    // --- 2. NAVIGATION ---
     window.switchTab = function(tabId) {
       const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports'];
       tabs.forEach(t => {
@@ -636,31 +647,7 @@
       }
     };
 
-    // 2. Database Config & Authentication
-    const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
-    const DELETE_PASSWORD = "M@lay@!3";
-
-    let DB = { rawMaterials: [], purchases: [], products: [], sales: [] };
-
-    function getHeaders() {
-      return {
-        "apikey": SUPABASE_KEY,
-        "Authorization": "Bearer " + SUPABASE_KEY,
-        "Content-Type": "application/json",
-        "Prefer": "return=representation"
-      };
-    }
-
-    function verifyPassword() {
-      const pass = prompt("Enter Admin Password to delete this record:");
-      if (pass === null) return false;
-      if (pass === DELETE_PASSWORD) return true;
-      alert("Incorrect password! Action aborted.");
-      return false;
-    }
-
-    // 3. Central Sync & Data Loader
+    // --- 3. DATA SYNC & LOAD ---
     window.loadDataFromDb = async function() {
       const statusEl = document.getElementById('db-status');
       statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
@@ -688,7 +675,7 @@
       }
     };
 
-    // 4. Stock Computation
+    // --- 4. STOCK & DASHBOARD COMPUTATION ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -703,7 +690,6 @@
       return Number(openingStock) - totalSold;
     }
 
-    // 5. Dashboard Calculations & Rendering
     function renderDashboard() {
       const totalSalesRevenue = DB.sales.reduce((acc, s) => acc + Number(s.total_sale || 0), 0);
       const totalPurchasesCost = DB.purchases.reduce((acc, p) => acc + Number(p.total || 0), 0);
@@ -795,7 +781,6 @@
       }
     }
 
-    // 6. Section Renderers
     function renderRawMaterials() {
       const tbody = document.getElementById('rm-tbody');
       tbody.innerHTML = '';
@@ -826,7 +811,7 @@
             <td class="p-3">${rm.edate || '-'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="deleteRM('${rm.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -861,7 +846,7 @@
             <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold">Received</span></td>
             <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="deletePurchase('${p.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -894,7 +879,7 @@
             <td class="p-3">${prd.location || '-'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="deleteProduct('${prd.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -926,14 +911,14 @@
             <td class="p-3 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
             <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="deleteSale('${s.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
       });
     }
 
-    // 7. Dynamic Printable Report Generator
+    // --- 5. REPORT GENERATOR ---
     window.generateReport = function() {
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
@@ -1166,7 +1151,7 @@
       renderSales();
     }
 
-    // 8. Form Handlers & DB Operations
+    // --- 6. FORM HANDLERS & DB ACTIONS ---
     window.saveRawMaterial = async function(e) {
       e.preventDefault();
       const code = document.getElementById('rm_code').value.trim().toUpperCase();
@@ -1362,29 +1347,31 @@
       switchTab('dashboard');
     };
 
-    // 9. Password Protected Deletions
-    window.deleteRM = async function(id) {
-      if (!verifyPassword()) return;
-      await fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
-      loadDataFromDb();
-    };
+    // --- 7. SECURE SERVER-SIDE RPC DELETION ---
+    window.secureDelete = async function(table, id) {
+      const pass = prompt("Enter Admin Password to delete this record:");
+      if (pass === null) return; // User cancelled
 
-    window.deletePurchase = async function(id) {
-      if (!verifyPassword()) return;
-      await fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
-      loadDataFromDb();
-    };
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            target_table: table,
+            record_id: id,
+            auth_passcode: pass
+          })
+        });
 
-    window.deleteProduct = async function(id) {
-      if (!verifyPassword()) return;
-      await fetch(`${SUPABASE_BASE_URL}/rest/v1/products?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
-      loadDataFromDb();
-    };
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Incorrect password or unauthorized action.");
+        }
 
-    window.deleteSale = async function(id) {
-      if (!verifyPassword()) return;
-      await fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
-      loadDataFromDb();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Deletion Failed: " + err.message);
+      }
     };
 
     // Auto-load on startup
