@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LZebra ERP - Cloud Connected & Management</title>
+  <title>LZebra ERP - Cloud Connected & RBAC</title>
   <link rel="icon" type="image/png" href="logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,9 +13,8 @@
     input, select { outline: none; }
     input:focus, select:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.2); }
 
-    /* Clean Print & PDF Output */
     @media print {
-      header, nav, form, .no-print, button, .action-col {
+      header, nav, form, .no-print, button, .action-col, #login-modal, #reset-modal, #edit-user-modal {
         display: none !important;
       }
       body {
@@ -27,9 +26,6 @@
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
-      }
-      .print-container {
-        display: block !important;
       }
       table {
         width: 100% !important;
@@ -44,24 +40,194 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- Header with Brand Logo -->
-  <header class="bg-slate-950 text-white px-6 py-3.5 flex flex-wrap justify-between items-center shadow-lg border-b border-emerald-900/40 no-print">
-    <div class="flex items-center gap-3.5">
-      <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-11 w-11 rounded-lg border border-emerald-500/40 shadow-sm object-cover bg-black" />
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400 font-extrabold">ERP</span></h1>
-          <span class="text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800">v2.4 PRO</span>
+  <!-- 1. LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-8 text-center">
+      <div class="flex justify-center mb-4">
+        <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-16 w-16 rounded-xl border border-emerald-500/50 shadow-md bg-black object-cover" />
+      </div>
+      <h2 class="text-2xl font-black text-slate-900 tracking-wider">LZEBRA <span class="text-emerald-600">ERP</span></h2>
+      <p class="text-xs text-slate-500 mt-1 mb-6">Enter your authorized credentials to access workspace</p>
+
+      <form onsubmit="handleLogin(event)" class="space-y-4 text-left text-xs">
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">USERNAME</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
+            <input required id="login_username" placeholder="e.g. admin, malaya, emp01" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
+          </div>
         </div>
-        <p class="text-xs text-slate-400">Database: <span class="text-emerald-400 font-mono">ERP_malaya</span></p>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-bold text-slate-600">PASSWORD</label>
+            <button type="button" onclick="openResetModal()" class="text-emerald-600 hover:text-emerald-800 font-semibold cursor-pointer">Forgot / Reset?</button>
+          </div>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400"></i>
+            <input required type="password" id="login_password" placeholder="••••••••" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
+          </div>
+        </div>
+
+        <div id="login-err" class="hidden p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"></div>
+
+        <button type="submit" id="btn-login" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-md cursor-pointer transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Secure Sign In
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t text-[11px] text-slate-400">
+        LZebra Enterprise Security & RBAC Access
       </div>
     </div>
+  </div>
+
+  <!-- 2. SECURITY Q&A PASSWORD RESET MODAL -->
+  <div id="reset-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-8 text-center relative">
+      <button type="button" onclick="closeResetModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
+
+      <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mx-auto mb-3">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h3 class="text-xl font-bold text-slate-900">Reset Password</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-6">Verify identity using your security question</p>
+
+      <!-- Step 1: Lookup Username -->
+      <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
+          <input required id="rst_username" placeholder="e.g. malaya, emp01" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+        </div>
+        <button type="submit" id="btn-lookup-user" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
+          Continue
+        </button>
+      </form>
+
+      <!-- Step 2: Answer Question & Set New Password -->
+      <form id="reset-step-2" onsubmit="verifyAnswerAndChangePassword(event)" class="space-y-4 text-left text-xs hidden">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-xs">
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Security Question:</span>
+          <p id="disp-sec-question" class="font-bold text-slate-900 text-sm mt-0.5"></p>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">YOUR SECRET ANSWER *</label>
+          <input required id="rst_answer" placeholder="Enter answer" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">NEW PASSWORD *</label>
+          <input required type="password" id="rst_newpass" placeholder="At least 6 characters" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">CONFIRM NEW PASSWORD *</label>
+          <input required type="password" id="rst_confpass" placeholder="Confirm new password" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+        </div>
+
+        <button type="submit" id="btn-sub-reset" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
+          Verify & Save New Password
+        </button>
+      </form>
+
+      <div id="reset-err" class="hidden mt-3 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"></div>
+      <div id="reset-succ" class="hidden mt-3 p-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold text-center"></div>
+    </div>
+  </div>
+
+  <!-- 3. EDIT USER MODAL (Admin/Malaya Update Feasibility) -->
+  <div id="edit-user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-left relative">
+      <button type="button" onclick="closeEditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
+
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
+        <i class="fa-solid fa-user-pen text-purple-600"></i> Update Employee / User Details
+      </h3>
+      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or update password.</p>
+
+      <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <input type="hidden" id="edit_user_id">
+        
+        <div>
+          <label class="font-bold text-slate-600">USERNAME</label>
+          <input readonly id="edit_username" class="mt-1 w-full border p-2 rounded bg-slate-100 font-mono text-slate-500">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600">NEW PASSWORD (LEAVE BLANK TO KEEP)</label>
+          <input type="password" id="edit_password" placeholder="Leave empty to keep current" class="mt-1 w-full border p-2 rounded bg-slate-50">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600">FULL NAME *</label>
+          <input required id="edit_fullname" class="mt-1 w-full border p-2 rounded">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600">MOBILE NUMBER *</label>
+          <input required id="edit_phone" class="mt-1 w-full border p-2 rounded font-mono">
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="font-bold text-slate-600">SECURITY QUESTION *</label>
+          <select required id="edit_sec_question" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
+            <option value="What was the name of your first school?">What was the name of your first school?</option>
+            <option value="What is your favorite color?">What is your favorite color?</option>
+            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+            <option value="What was your first car or bike model?">What was your first car or bike model?</option>
+            <option value="What is the name of your hometown?">What is the name of your hometown?</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600">SECRET ANSWER *</label>
+          <input required id="edit_sec_answer" class="mt-1 w-full border p-2 rounded">
+        </div>
+
+        <div>
+          <label class="font-bold text-slate-600">ROLE / PERMISSION LEVEL *</label>
+          <select required id="edit_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
+            <option value="user_emp">Operations Employee (Limited)</option>
+            <option value="user_full">Malaya (Full Resources + User Mgmt)</option>
+            <option value="admin">System Administrator (Root Level)</option>
+          </select>
+        </div>
+
+        <div class="sm:col-span-2 flex justify-end gap-2 pt-3 border-t mt-2">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-semibold text-xs cursor-pointer">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-xs cursor-pointer shadow-sm">
+            Save Changes to Cloud DB
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header with Session Profile Indicator -->
+  <header class="bg-slate-950 text-white px-6 py-3 flex flex-wrap justify-between items-center shadow-lg border-b border-emerald-900/40 no-print">
+    <div class="flex items-center gap-3.5">
+      <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-10 w-10 rounded-lg border border-emerald-500/40 object-cover bg-black" />
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400 font-extrabold">ERP</span></h1>
+          <span id="role-badge" class="text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase">GUEST</span>
+        </div>
+        <p class="text-[11px] text-slate-400">User: <span id="user-display" class="text-white font-semibold">Not Signed In</span></p>
+      </div>
+    </div>
+
     <div class="flex items-center gap-3 mt-2 sm:mt-0">
       <span id="db-status" class="text-xs bg-slate-900 px-3 py-1.5 rounded border border-slate-800 flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Connecting...
+        <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Initializing...
       </span>
-      <button type="button" onclick="loadDataFromDb()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer transition shadow-sm">
-        <i class="fa-solid fa-arrows-rotate"></i> Sync Data
+      <button type="button" onclick="loadDataFromDb()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer border border-slate-700">
+        <i class="fa-solid fa-arrows-rotate"></i> Sync
+      </button>
+      <button type="button" onclick="handleLogout()" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer transition">
+        <i class="fa-solid fa-power-off"></i> Logout
       </button>
     </div>
   </header>
@@ -85,6 +251,9 @@
     </button>
     <button type="button" onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
       <i class="fa-solid fa-print text-indigo-600"></i> REPORTS & PRINT
+    </button>
+    <button type="button" onclick="switchTab('user-mgmt')" id="tab-user-mgmt" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer hidden">
+      <i class="fa-solid fa-users-gear text-purple-600"></i> USER MANAGEMENT
     </button>
   </nav>
 
@@ -591,18 +760,96 @@
         </div>
       </div>
 
-      <!-- Printable Report Canvas -->
       <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm"></div>
+    </section>
+
+    <!-- TAB 6: USER MANAGEMENT (ADMIN & MALAYA ACCESS) -->
+    <section id="sec-user-mgmt" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-purple-600"></i> Register New User Account with Security Question
+        </h2>
+        <form id="userForm" onsubmit="saveUserAccount(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+          <div>
+            <label class="font-semibold text-slate-600">USERNAME *</label>
+            <input required id="usr_username" placeholder="e.g. rohit, emp02" class="mt-1 w-full border p-2 rounded lowercase font-mono">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">INITIAL PASSWORD *</label>
+            <input required type="password" id="usr_password" placeholder="Min 6 chars" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">FULL NAME *</label>
+            <input required id="usr_fullname" placeholder="Full Name" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">MOBILE NUMBER *</label>
+            <input required id="usr_phone" placeholder="10-digit number" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SECURITY QUESTION *</label>
+            <select required id="usr_sec_question" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
+              <option value="What was the name of your first school?">What was the name of your first school?</option>
+              <option value="What is your favorite color?">What is your favorite color?</option>
+              <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+              <option value="What was your first car or bike model?">What was your first car or bike model?</option>
+              <option value="What is the name of your hometown?">What is the name of your hometown?</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-semibold text-slate-600">SECRET ANSWER *</label>
+            <input required id="usr_sec_answer" placeholder="Secret Answer" class="mt-1 w-full border p-2 rounded">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="font-semibold text-slate-600">ROLE / ACCESS LEVEL *</label>
+            <select required id="usr_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
+              <option value="user_emp">Operations Employee (Limited)</option>
+              <option value="user_full">Malaya (Full Resources + User Mgmt)</option>
+              <option value="admin">System Administrator (Root Level)</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2 lg:col-span-4 flex items-end">
+            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded text-sm transition cursor-pointer">
+              Create User Account (Cloud DB)
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm">Registered Accounts & RBAC Directory</h3>
+          <span id="user-count-badge" class="text-xs bg-purple-100 text-purple-800 font-semibold px-2.5 py-0.5 rounded">0 Users</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">USERNAME</th>
+                <th class="p-3">FULL NAME</th>
+                <th class="p-3">MOBILE</th>
+                <th class="p-3">ROLE</th>
+                <th class="p-3">SECURITY QUESTION</th>
+                <th class="p-3 text-center action-col">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="user-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
   </main>
 
   <script>
-    // --- 1. CONFIGURATION ---
+    // --- 1. CONFIGURATION & STATE ---
     const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
     const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
 
-    let DB = { rawMaterials: [], purchases: [], products: [], sales: [] };
+    let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_SESSION')) || null;
+    let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [] };
+
+    let RESET_STATE = { userRecord: null };
 
     function getHeaders() {
       return {
@@ -613,9 +860,225 @@
       };
     }
 
-    // --- 2. NAVIGATION ---
+    // --- 2. AUTHENTICATION & SESSION MANAGEMENT ---
+    window.handleLogin = async function(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
+      const passwordInput = document.getElementById('login_password').value.trim();
+      const errBox = document.getElementById('login-err');
+      const btn = document.getElementById('btn-login');
+
+      errBox.classList.add('hidden');
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Authenticating...`;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=*`, {
+          headers: getHeaders()
+        });
+        const users = await res.json();
+
+        if (!users || users.length === 0 || users[0].password !== passwordInput) {
+          throw new Error("Invalid Username or Password.");
+        }
+
+        const user = users[0];
+        CURRENT_USER = {
+          username: user.username,
+          fullName: user.full_name,
+          phone: user.phone,
+          role: user.role
+        };
+
+        localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
+        applyUserSession();
+        loadDataFromDb();
+      } catch (err) {
+        errBox.textContent = err.message || "Failed to sign in. Verify credentials.";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Secure Sign In`;
+      }
+    };
+
+    window.handleLogout = function() {
+      localStorage.removeItem('LZEBRA_AUTH_SESSION');
+      CURRENT_USER = null;
+      document.getElementById('login-modal').classList.remove('hidden');
+      document.getElementById('user-display').textContent = "Not Signed In";
+      document.getElementById('role-badge').textContent = "GUEST";
+    };
+
+    function applyUserSession() {
+      if (!CURRENT_USER) {
+        document.getElementById('login-modal').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('user-display').textContent = CURRENT_USER.fullName;
+      
+      const roleBadge = document.getElementById('role-badge');
+      const userMgmtTab = document.getElementById('tab-user-mgmt');
+      const dashTab = document.getElementById('tab-dashboard');
+      const reportsTab = document.getElementById('tab-reports');
+
+      const hasUserMgmtRights = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full');
+
+      if (CURRENT_USER.role === 'admin') {
+        roleBadge.textContent = "ADMINISTRATOR";
+        roleBadge.className = "text-[10px] bg-purple-950 text-purple-300 font-mono px-2 py-0.5 rounded border border-purple-800 uppercase";
+      } else if (CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full') {
+        roleBadge.textContent = "MALAYA (FULL)";
+        roleBadge.className = "text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase";
+      } else {
+        roleBadge.textContent = "OPERATIONS (EMP)";
+        roleBadge.className = "text-[10px] bg-blue-950 text-blue-300 font-mono px-2 py-0.5 rounded border border-blue-800 uppercase";
+      }
+
+      if (CURRENT_USER.role === 'user_emp') {
+        userMgmtTab.classList.add('hidden');
+        dashTab.style.display = 'none';
+        reportsTab.style.display = 'none';
+        switchTab('rm-master');
+      } else {
+        dashTab.style.display = 'flex';
+        reportsTab.style.display = 'flex';
+        if (hasUserMgmtRights) {
+          userMgmtTab.classList.remove('hidden');
+        } else {
+          userMgmtTab.classList.add('hidden');
+        }
+        switchTab('dashboard');
+      }
+    }
+
+    // --- 3. SECURITY Q&A PASSWORD RESET ---
+    window.openResetModal = function() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+      document.getElementById('reset-step-1').classList.remove('hidden');
+      document.getElementById('reset-step-2').classList.add('hidden');
+      document.getElementById('reset-err').classList.add('hidden');
+      document.getElementById('reset-succ').classList.add('hidden');
+      document.getElementById('reset-step-1').reset();
+      document.getElementById('reset-step-2').reset();
+      RESET_STATE.userRecord = null;
+    };
+
+    window.closeResetModal = function() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    };
+
+    window.lookupSecurityQuestion = async function(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('rst_username').value.trim().toLowerCase();
+      const errBox = document.getElementById('reset-err');
+      const btn = document.getElementById('btn-lookup-user');
+
+      errBox.classList.add('hidden');
+
+      if (usernameInput === 'admin') {
+        errBox.textContent = "Access Denied: Root Admin credentials cannot be reset via public recovery.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Finding Profile...`;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=*`, {
+          headers: getHeaders()
+        });
+        const users = await res.json();
+
+        if (!users || users.length === 0) {
+          throw new Error("Username not found in system directory.");
+        }
+
+        const user = users[0];
+        RESET_STATE.userRecord = user;
+
+        document.getElementById('disp-sec-question').textContent = user.sec_question || "What was the name of your first school?";
+        document.getElementById('reset-step-1').classList.add('hidden');
+        document.getElementById('reset-step-2').classList.remove('hidden');
+      } catch (err) {
+        errBox.textContent = err.message || "Failed to process request.";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `Continue`;
+      }
+    };
+
+    window.verifyAnswerAndChangePassword = async function(e) {
+      e.preventDefault();
+      const enteredAnswer = document.getElementById('rst_answer').value.trim().toLowerCase();
+      const newPass = document.getElementById('rst_newpass').value.trim();
+      const confPass = document.getElementById('rst_confpass').value.trim();
+      const errBox = document.getElementById('reset-err');
+      const succBox = document.getElementById('reset-succ');
+      const btn = document.getElementById('btn-sub-reset');
+
+      errBox.classList.add('hidden');
+      succBox.classList.add('hidden');
+
+      const expectedAnswer = (RESET_STATE.userRecord.sec_answer || '').trim().toLowerCase();
+
+      if (enteredAnswer !== expectedAnswer) {
+        errBox.textContent = "Incorrect answer to security question. Please try again.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (newPass.length < 6) {
+        errBox.textContent = "New password must be at least 6 characters.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (newPass !== confPass) {
+        errBox.textContent = "Passwords do not match.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Updating Password...`;
+
+      try {
+        const updateRes = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${RESET_STATE.userRecord.username}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ password: newPass })
+        });
+
+        if (!updateRes.ok) throw new Error("Failed to update password in database.");
+
+        succBox.textContent = "Password updated successfully! Redirecting to sign in...";
+        succBox.classList.remove('hidden');
+
+        setTimeout(() => {
+          closeResetModal();
+          document.getElementById('login_username').value = RESET_STATE.userRecord.username;
+          document.getElementById('login_password').value = "";
+        }, 1800);
+      } catch (err) {
+        errBox.textContent = err.message || "Error updating password.";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `Verify & Save New Password`;
+      }
+    };
+
+    // --- 4. NAVIGATION TAB CONTROLLER ---
     window.switchTab = function(tabId) {
-      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports'];
+      if (CURRENT_USER?.role === 'user_emp' && (tabId === 'dashboard' || tabId === 'reports' || tabId === 'user-mgmt')) {
+        alert("Access Denied: You do not have permission to view this resource.");
+        return;
+      }
+      if (CURRENT_USER?.role === 'user_full' && tabId === 'user-mgmt' && CURRENT_USER.username !== 'malaya') {
+        alert("Access Denied: User Management is restricted.");
+        return;
+      }
+
+      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'user-mgmt'];
       tabs.forEach(t => {
         const sec = document.getElementById('sec-' + t);
         const btn = document.getElementById('tab-' + t);
@@ -647,17 +1110,19 @@
       }
     };
 
-    // --- 3. DATA SYNC & LOAD ---
+    // --- 5. DATA SYNC ENGINE ---
     window.loadDataFromDb = async function() {
+      if (!CURRENT_USER) return;
       const statusEl = document.getElementById('db-status');
       statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
 
       try {
-        const [rmRes, purRes, prdRes, saleRes] = await Promise.all([
+        const [rmRes, purRes, prdRes, saleRes, usrRes] = await Promise.all([
           fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?select=*&order=created_at.asc`, { headers: getHeaders() }),
           fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.asc`, { headers: getHeaders() }),
           fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.asc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.asc`, { headers: getHeaders() })
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.asc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=*&order=created_at.asc`, { headers: getHeaders() })
         ]);
 
         if (!rmRes.ok || !purRes.ok || !prdRes.ok) throw new Error('Database Sync Failed');
@@ -666,6 +1131,7 @@
         DB.purchases = await purRes.json();
         DB.products = await prdRes.json();
         DB.sales = saleRes.ok ? await saleRes.json() : [];
+        DB.users = usrRes.ok ? await usrRes.json() : [];
 
         renderAll();
         statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Connected`;
@@ -675,7 +1141,7 @@
       }
     };
 
-    // --- 4. STOCK & DASHBOARD COMPUTATION ---
+    // --- 6. STOCK & DASHBOARD COMPUTATION ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -811,7 +1277,7 @@
             <td class="p-3">${rm.edate || '-'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -846,7 +1312,7 @@
             <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold">Received</span></td>
             <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -879,7 +1345,7 @@
             <td class="p-3">${prd.location || '-'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -911,15 +1377,125 @@
             <td class="p-3 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
             <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete (Password Protected)" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
       });
     }
 
-    // --- 5. REPORT GENERATOR ---
+    function renderUsers() {
+      const tbody = document.getElementById('user-tbody');
+      tbody.innerHTML = '';
+      document.getElementById('user-count-badge').textContent = `${DB.users.length} Users`;
+
+      DB.users.forEach((u) => {
+        let roleBadge = '';
+        if (u.role === 'admin') {
+          roleBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold text-[10px]">ADMINISTRATOR</span>`;
+        } else if (u.role === 'user_full' || u.username === 'malaya') {
+          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">MALAYA (FULL)</span>`;
+        } else {
+          roleBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold text-[10px]">OPERATIONS (EMP)</span>`;
+        }
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono font-bold text-purple-700">${u.username}</td>
+            <td class="p-3 font-semibold text-slate-900">${u.full_name}</td>
+            <td class="p-3 font-mono text-slate-600">${u.phone || '-'}</td>
+            <td class="p-3">${roleBadge}</td>
+            <td class="p-3 text-slate-600 text-xs italic">${u.sec_question || 'What was the name of your first school?'}</td>
+            <td class="p-3 text-center action-col flex items-center justify-center gap-2">
+              <button type="button" onclick="openEditModal('${u.id}')" title="Edit / Update User Details" class="text-blue-600 hover:text-blue-800 cursor-pointer p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+              ${u.username !== 'admin' ? `
+                <button type="button" onclick="secureDelete('erp_users', '${u.id}')" title="Delete User" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ` : `<span class="text-slate-400 text-xs italic font-semibold">Protected Root</span>`}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // --- 7. EDIT / UPDATE USER FUNCTIONS ---
+    window.openEditModal = function(userId) {
+      const user = DB.users.find(u => u.id === userId);
+      if (!user) return;
+
+      document.getElementById('edit_user_id').value = user.id;
+      document.getElementById('edit_username').value = user.username;
+      document.getElementById('edit_fullname').value = user.full_name || '';
+      document.getElementById('edit_phone').value = user.phone || '';
+      document.getElementById('edit_sec_question').value = user.sec_question || 'What was the name of your first school?';
+      document.getElementById('edit_sec_answer').value = user.sec_answer || '';
+      document.getElementById('edit_role').value = user.role || 'user_emp';
+      document.getElementById('edit_password').value = ''; // Blank by default
+
+      // Protect root admin role change
+      if (user.username === 'admin') {
+        document.getElementById('edit_role').disabled = true;
+      } else {
+        document.getElementById('edit_role').disabled = false;
+      }
+
+      document.getElementById('edit-user-modal').classList.remove('hidden');
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById('edit-user-modal').classList.add('hidden');
+    };
+
+    window.handleUpdateUser = async function(e) {
+      e.preventDefault();
+      const userId = document.getElementById('edit_user_id').value;
+      const username = document.getElementById('edit_username').value;
+      const full_name = document.getElementById('edit_fullname').value.trim();
+      const phone = document.getElementById('edit_phone').value.trim();
+      const sec_question = document.getElementById('edit_sec_question').value;
+      const sec_answer = document.getElementById('edit_sec_answer').value.trim();
+      const role = document.getElementById('edit_role').value;
+      const newPassword = document.getElementById('edit_password').value.trim();
+
+      const updatePayload = {
+        full_name,
+        phone,
+        sec_question,
+        sec_answer,
+        role: username === 'admin' ? 'admin' : role
+      };
+
+      if (newPassword.length > 0) {
+        if (newPassword.length < 6) {
+          alert("New password must be at least 6 characters.");
+          return;
+        }
+        updatePayload.password = newPassword;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?id=eq.${userId}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify(updatePayload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to update user");
+        }
+
+        alert(`User details for ${username} updated successfully!`);
+        closeEditModal();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Update Error: " + err.message);
+      }
+    };
+
+    // --- 8. STATEMENT & REPORT GENERATOR ---
     window.generateReport = function() {
+      if (CURRENT_USER?.role === 'user_emp') return;
+
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
       const canvas = document.getElementById('print-canvas');
@@ -1149,9 +1725,49 @@
       renderPurchases();
       renderProducts();
       renderSales();
+      renderUsers();
     }
 
-    // --- 6. FORM HANDLERS & DB ACTIONS ---
+    // --- 9. FORM HANDLERS & DB ACTIONS ---
+    window.saveUserAccount = async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('usr_username').value.trim().toLowerCase();
+      const password = document.getElementById('usr_password').value.trim();
+      const full_name = document.getElementById('usr_fullname').value.trim();
+      const phone = document.getElementById('usr_phone').value.trim();
+      const sec_question = document.getElementById('usr_sec_question').value;
+      const sec_answer = document.getElementById('usr_sec_answer').value.trim();
+      const role = document.getElementById('usr_role').value;
+
+      if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return;
+      }
+
+      if (username === 'admin') {
+        alert("Action Prohibited: Cannot create or overwrite the root admin account.");
+        return;
+      }
+
+      const newUser = { username, password, full_name, phone, sec_question, sec_answer, role };
+
+      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(newUser)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Error creating user account: " + (err.message || JSON.stringify(err)));
+        return;
+      }
+
+      alert(`Account created successfully for ${full_name}!`);
+      document.getElementById('userForm').reset();
+      loadDataFromDb();
+    };
+
     window.saveRawMaterial = async function(e) {
       e.preventDefault();
       const code = document.getElementById('rm_code').value.trim().toUpperCase();
@@ -1344,13 +1960,18 @@
 
       document.getElementById('salesForm').reset();
       loadDataFromDb();
-      switchTab('dashboard');
+      if (CURRENT_USER?.role !== 'user_emp') switchTab('dashboard');
     };
 
-    // --- 7. SECURE SERVER-SIDE RPC DELETION ---
+    // --- 10. SECURE RPC DELETIONS (Admin@175 & M@lay@!3) ---
     window.secureDelete = async function(table, id) {
-      const pass = prompt("Enter Admin Password to delete this record:");
-      if (pass === null) return; // User cancelled
+      if (CURRENT_USER?.role === 'user_emp') {
+        alert("Unauthorized: Operations staff cannot delete records.");
+        return;
+      }
+
+      const pass = prompt("Enter Administrative Authorization Password:");
+      if (pass === null) return;
 
       try {
         const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
@@ -1370,13 +1991,14 @@
 
         loadDataFromDb();
       } catch (err) {
-        alert("Deletion Failed: " + err.message);
+        alert("Deletion Blocked: " + err.message);
       }
     };
 
     // Auto-load on startup
     window.addEventListener('DOMContentLoaded', () => {
-      loadDataFromDb();
+      applyUserSession();
+      if (CURRENT_USER) loadDataFromDb();
     });
   </script>
 </body>
