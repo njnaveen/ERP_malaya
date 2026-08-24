@@ -93,7 +93,6 @@
       <h3 class="text-xl font-bold text-slate-900">Reset Password</h3>
       <p class="text-xs text-slate-500 mt-1 mb-6">Verify identity using your security question</p>
 
-      <!-- Step 1: Lookup Username -->
       <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
@@ -104,7 +103,6 @@
         </button>
       </form>
 
-      <!-- Step 2: Answer Question & Set New Password -->
       <form id="reset-step-2" onsubmit="verifyAnswerAndChangePassword(event)" class="space-y-4 text-left text-xs hidden">
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-xs">
           <span class="text-[10px] text-slate-400 font-bold uppercase block">Security Question:</span>
@@ -136,7 +134,7 @@
     </div>
   </div>
 
-  <!-- 3. EDIT USER MODAL (Admin/Malaya Update Feasibility) -->
+  <!-- 3. EDIT USER MODAL -->
   <div id="edit-user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-left relative">
       <button type="button" onclick="closeEditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
@@ -144,7 +142,7 @@
       <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
         <i class="fa-solid fa-user-pen text-purple-600"></i> Update Employee / User Details
       </h3>
-      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or update password.</p>
+      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or reset password.</p>
 
       <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <input type="hidden" id="edit_user_id">
@@ -155,7 +153,7 @@
         </div>
 
         <div>
-          <label class="font-bold text-slate-600">NEW PASSWORD (LEAVE BLANK TO KEEP)</label>
+          <label class="font-bold text-slate-600">NEW PASSWORD (OPTIONAL)</label>
           <input type="password" id="edit_password" placeholder="Leave empty to keep current" class="mt-1 w-full border p-2 rounded bg-slate-50">
         </div>
 
@@ -251,6 +249,9 @@
     </button>
     <button type="button" onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
       <i class="fa-solid fa-print text-indigo-600"></i> REPORTS & PRINT
+    </button>
+    <button type="button" onclick="switchTab('audit-logs')" id="tab-audit-logs" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer hidden">
+      <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> AUDIT LOGS
     </button>
     <button type="button" onclick="switchTab('user-mgmt')" id="tab-user-mgmt" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer hidden">
       <i class="fa-solid fa-users-gear text-purple-600"></i> USER MANAGEMENT
@@ -446,8 +447,7 @@
                 <th class="p-3">REORDER LEVEL</th>
                 <th class="p-3">LOCATION</th>
                 <th class="p-3">BATCH NO.</th>
-                <th class="p-3">PURCHASE DATE</th>
-                <th class="p-3">EXPIRY DATE</th>
+                <th class="p-3">LOGGED BY</th>
                 <th class="p-3">STATUS</th>
                 <th class="p-3 text-center action-col">ACTION</th>
               </tr>
@@ -542,8 +542,7 @@
                 <th class="p-3 font-bold text-slate-800">TOTAL AMOUNT</th>
                 <th class="p-3">BATCH NO.</th>
                 <th class="p-3">PURCHASE DATE</th>
-                <th class="p-3">EXPIRY DATE</th>
-                <th class="p-3">STATUS</th>
+                <th class="p-3">LOGGED BY</th>
                 <th class="p-3">REMARKS</th>
                 <th class="p-3 text-center action-col">ACTION</th>
               </tr>
@@ -624,6 +623,7 @@
                 <th class="p-3 bg-emerald-50 text-emerald-900 font-bold">CURRENT STOK</th>
                 <th class="p-3">REORDER LEVEL</th>
                 <th class="p-3">LOCATION</th>
+                <th class="p-3">LOGGED BY</th>
                 <th class="p-3">STATUS</th>
                 <th class="p-3 text-center action-col">ACTION</th>
               </tr>
@@ -709,6 +709,7 @@
                 <th class="p-3">GST %</th>
                 <th class="p-3 font-bold text-slate-900">TOTAL SALE</th>
                 <th class="p-3 text-right text-emerald-700 font-bold">GROSS PROFIT</th>
+                <th class="p-3">LOGGED BY</th>
                 <th class="p-3">REMARKS</th>
                 <th class="p-3 text-center action-col">ACTION</th>
               </tr>
@@ -763,7 +764,56 @@
       <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm"></div>
     </section>
 
-    <!-- TAB 6: USER MANAGEMENT (ADMIN & MALAYA ACCESS) -->
+    <!-- TAB 6: AUDIT & ACTIVITY LOGS (NEW AUDIT MODULE) -->
+    <section id="sec-audit-logs" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
+          <div>
+            <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Real-time unalterable record of all system entries, modifications, and deletions</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
+              <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
+                <option value="ALL">All Operational Modules</option>
+                <option value="Raw Materials">Raw Material Master</option>
+                <option value="Purchases">Purchase Inward</option>
+                <option value="Products">Product Master</option>
+                <option value="Sales">Sales Register</option>
+                <option value="User Management">User & RBAC Management</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
+              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">TIMESTAMP</th>
+                <th class="p-3">MODULE</th>
+                <th class="p-3">ACTION TYPE</th>
+                <th class="p-3">ITEM IDENTIFIER / CODE</th>
+                <th class="p-3">TRANSACTION DETAILS</th>
+                <th class="p-3">PERFORMED BY</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 7: USER MANAGEMENT -->
     <section id="sec-user-mgmt" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-lg border shadow-sm">
         <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
@@ -847,7 +897,7 @@
     const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
 
     let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_SESSION')) || null;
-    let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [] };
+    let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [], logs: [] };
 
     let RESET_STATE = { userRecord: null };
 
@@ -860,7 +910,27 @@
       };
     }
 
-    // --- 2. AUTHENTICATION & SESSION MANAGEMENT ---
+    // --- 2. AUDIT LOGGING HELPER ---
+    async function pushAuditLog(module, action, record_identifier, details) {
+      try {
+        const actor = CURRENT_USER ? `${CURRENT_USER.fullName} (${CURRENT_USER.username})` : 'System';
+        await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_audit_logs`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            module,
+            action,
+            record_identifier,
+            details,
+            performed_by: actor
+          })
+        });
+      } catch (err) {
+        console.warn("Could not push audit log entry:", err);
+      }
+    }
+
+    // --- 3. AUTHENTICATION & SESSION MANAGEMENT ---
     window.handleLogin = async function(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
@@ -890,6 +960,7 @@
         };
 
         localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
+        await pushAuditLog("Authentication", "LOGIN", user.username, "User logged in successfully");
         applyUserSession();
         loadDataFromDb();
       } catch (err) {
@@ -900,7 +971,10 @@
       }
     };
 
-    window.handleLogout = function() {
+    window.handleLogout = async function() {
+      if (CURRENT_USER) {
+        await pushAuditLog("Authentication", "LOGOUT", CURRENT_USER.username, "User logged out");
+      }
       localStorage.removeItem('LZEBRA_AUTH_SESSION');
       CURRENT_USER = null;
       document.getElementById('login-modal').classList.remove('hidden');
@@ -919,10 +993,11 @@
       
       const roleBadge = document.getElementById('role-badge');
       const userMgmtTab = document.getElementById('tab-user-mgmt');
+      const auditLogsTab = document.getElementById('tab-audit-logs');
       const dashTab = document.getElementById('tab-dashboard');
       const reportsTab = document.getElementById('tab-reports');
 
-      const hasUserMgmtRights = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full');
+      const hasPrivilegedRights = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full');
 
       if (CURRENT_USER.role === 'admin') {
         roleBadge.textContent = "ADMINISTRATOR";
@@ -937,22 +1012,25 @@
 
       if (CURRENT_USER.role === 'user_emp') {
         userMgmtTab.classList.add('hidden');
+        auditLogsTab.classList.add('hidden');
         dashTab.style.display = 'none';
         reportsTab.style.display = 'none';
         switchTab('rm-master');
       } else {
         dashTab.style.display = 'flex';
         reportsTab.style.display = 'flex';
-        if (hasUserMgmtRights) {
+        if (hasPrivilegedRights) {
           userMgmtTab.classList.remove('hidden');
+          auditLogsTab.classList.remove('hidden');
         } else {
           userMgmtTab.classList.add('hidden');
+          auditLogsTab.classList.add('hidden');
         }
         switchTab('dashboard');
       }
     }
 
-    // --- 3. SECURITY Q&A PASSWORD RESET ---
+    // --- 4. SECURITY Q&A PASSWORD RESET ---
     window.openResetModal = function() {
       document.getElementById('reset-modal').classList.remove('hidden');
       document.getElementById('reset-step-1').classList.remove('hidden');
@@ -1051,6 +1129,8 @@
 
         if (!updateRes.ok) throw new Error("Failed to update password in database.");
 
+        await pushAuditLog("User Management", "PASSWORD_RESET", RESET_STATE.userRecord.username, "Password reset via security Q&A");
+
         succBox.textContent = "Password updated successfully! Redirecting to sign in...";
         succBox.classList.remove('hidden');
 
@@ -1067,18 +1147,14 @@
       }
     };
 
-    // --- 4. NAVIGATION TAB CONTROLLER ---
+    // --- 5. NAVIGATION TAB CONTROLLER ---
     window.switchTab = function(tabId) {
-      if (CURRENT_USER?.role === 'user_emp' && (tabId === 'dashboard' || tabId === 'reports' || tabId === 'user-mgmt')) {
+      if (CURRENT_USER?.role === 'user_emp' && (tabId === 'dashboard' || tabId === 'reports' || tabId === 'user-mgmt' || tabId === 'audit-logs')) {
         alert("Access Denied: You do not have permission to view this resource.");
         return;
       }
-      if (CURRENT_USER?.role === 'user_full' && tabId === 'user-mgmt' && CURRENT_USER.username !== 'malaya') {
-        alert("Access Denied: User Management is restricted.");
-        return;
-      }
 
-      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'user-mgmt'];
+      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
       tabs.forEach(t => {
         const sec = document.getElementById('sec-' + t);
         const btn = document.getElementById('tab-' + t);
@@ -1105,24 +1181,24 @@
         activeBtn.classList.remove('text-slate-500');
       }
 
-      if (tabId === 'reports') {
-        generateReport();
-      }
+      if (tabId === 'reports') generateReport();
+      if (tabId === 'audit-logs') renderAuditLogs();
     };
 
-    // --- 5. DATA SYNC ENGINE ---
+    // --- 6. DATA SYNC ENGINE ---
     window.loadDataFromDb = async function() {
       if (!CURRENT_USER) return;
       const statusEl = document.getElementById('db-status');
       statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
 
       try {
-        const [rmRes, purRes, prdRes, saleRes, usrRes] = await Promise.all([
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?select=*&order=created_at.asc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.asc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.asc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.asc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=*&order=created_at.asc`, { headers: getHeaders() })
+        const [rmRes, purRes, prdRes, saleRes, usrRes, logRes] = await Promise.all([
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_audit_logs?select=*&order=created_at.desc&limit=200`, { headers: getHeaders() })
         ]);
 
         if (!rmRes.ok || !purRes.ok || !prdRes.ok) throw new Error('Database Sync Failed');
@@ -1132,6 +1208,7 @@
         DB.products = await prdRes.json();
         DB.sales = saleRes.ok ? await saleRes.json() : [];
         DB.users = usrRes.ok ? await usrRes.json() : [];
+        DB.logs = logRes.ok ? await logRes.json() : [];
 
         renderAll();
         statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Connected`;
@@ -1141,7 +1218,7 @@
       }
     };
 
-    // --- 6. STOCK & DASHBOARD COMPUTATION ---
+    // --- 7. STOCK & DASHBOARD COMPUTATION ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -1229,7 +1306,7 @@
 
       const salesFeedTbody = document.getElementById('dash-recentsales-tbody');
       salesFeedTbody.innerHTML = '';
-      const recentSales = [...DB.sales].reverse().slice(0, 5);
+      const recentSales = [...DB.sales].slice(0, 5);
       if (recentSales.length === 0) {
         salesFeedTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
       } else {
@@ -1273,8 +1350,7 @@
             <td class="p-3">${rm.reorder}</td>
             <td class="p-3">${rm.location || '-'}</td>
             <td class="p-3">${rm.batch || '-'}</td>
-            <td class="p-3">${rm.pdate || '-'}</td>
-            <td class="p-3">${rm.edate || '-'}</td>
+            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${rm.created_by || 'Admin'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
               <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
@@ -1308,8 +1384,7 @@
             <td class="p-3 font-bold text-slate-900">₹${Number(p.total).toLocaleString()}</td>
             <td class="p-3">${p.batch || '-'}</td>
             <td class="p-3">${p.pdate || '-'}</td>
-            <td class="p-3">${p.edate || '-'}</td>
-            <td class="p-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold">Received</span></td>
+            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${p.created_by || 'Admin'}</td>
             <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
               <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
@@ -1343,6 +1418,7 @@
             <td class="p-3 bg-emerald-50 font-bold text-emerald-950">${curStock}</td>
             <td class="p-3">${prd.reorder}</td>
             <td class="p-3">${prd.location || '-'}</td>
+            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${prd.created_by || 'Admin'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
               <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
@@ -1375,10 +1451,55 @@
             <td class="p-3">${s.gst}%</td>
             <td class="p-3 font-bold text-slate-900">₹${Number(s.total_sale).toLocaleString()}</td>
             <td class="p-3 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
+            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${s.created_by || 'Admin'}</td>
             <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
               <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
             </td>
+          </tr>
+        `;
+      });
+    }
+
+    // --- 8. AUDIT LOGS RENDERER ---
+    function renderAuditLogs() {
+      const tbody = document.getElementById('audit-tbody');
+      tbody.innerHTML = '';
+
+      const filterModule = document.getElementById('log_filter_module')?.value || 'ALL';
+      const searchUser = (document.getElementById('log_search_user')?.value || '').trim().toLowerCase();
+
+      const filteredLogs = DB.logs.filter(log => {
+        const matchesModule = (filterModule === 'ALL' || log.module === filterModule);
+        const matchesUser = (!searchUser || (log.performed_by && log.performed_by.toLowerCase().includes(searchUser)));
+        return matchesModule && matchesUser;
+      });
+
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">No activity log records found matching selected filter.</td></tr>`;
+        return;
+      }
+
+      filteredLogs.forEach(l => {
+        let actionBadge = '';
+        if (l.action === 'CREATE' || l.action === 'LOGIN') {
+          actionBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-plus mr-1"></i>${l.action}</span>`;
+        } else if (l.action === 'UPDATE' || l.action === 'PASSWORD_RESET') {
+          actionBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-pen mr-1"></i>${l.action}</span>`;
+        } else {
+          actionBadge = `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-trash mr-1"></i>${l.action}</span>`;
+        }
+
+        const dateFormatted = new Date(l.created_at).toLocaleString();
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] text-slate-500">${dateFormatted}</td>
+            <td class="p-3 font-bold text-slate-800">${l.module}</td>
+            <td class="p-3">${actionBadge}</td>
+            <td class="p-3 font-mono font-bold text-purple-700">${l.record_identifier}</td>
+            <td class="p-3 text-slate-600 font-medium">${l.details}</td>
+            <td class="p-3 font-semibold text-slate-900"><i class="fa-solid fa-user-circle mr-1 text-slate-400"></i>${l.performed_by}</td>
           </tr>
         `;
       });
@@ -1407,7 +1528,7 @@
             <td class="p-3">${roleBadge}</td>
             <td class="p-3 text-slate-600 text-xs italic">${u.sec_question || 'What was the name of your first school?'}</td>
             <td class="p-3 text-center action-col flex items-center justify-center gap-2">
-              <button type="button" onclick="openEditModal('${u.id}')" title="Edit / Update User Details" class="text-blue-600 hover:text-blue-800 cursor-pointer p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button type="button" onclick="openEditModal('${u.id}')" title="Edit User" class="text-blue-600 hover:text-blue-800 cursor-pointer p-1"><i class="fa-solid fa-pen-to-square"></i></button>
               ${u.username !== 'admin' ? `
                 <button type="button" onclick="secureDelete('erp_users', '${u.id}')" title="Delete User" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
               ` : `<span class="text-slate-400 text-xs italic font-semibold">Protected Root</span>`}
@@ -1417,7 +1538,7 @@
       });
     }
 
-    // --- 7. EDIT / UPDATE USER FUNCTIONS ---
+    // --- 9. EDIT / UPDATE USER FUNCTIONS ---
     window.openEditModal = function(userId) {
       const user = DB.users.find(u => u.id === userId);
       if (!user) return;
@@ -1429,9 +1550,8 @@
       document.getElementById('edit_sec_question').value = user.sec_question || 'What was the name of your first school?';
       document.getElementById('edit_sec_answer').value = user.sec_answer || '';
       document.getElementById('edit_role').value = user.role || 'user_emp';
-      document.getElementById('edit_password').value = ''; // Blank by default
+      document.getElementById('edit_password').value = '';
 
-      // Protect root admin role change
       if (user.username === 'admin') {
         document.getElementById('edit_role').disabled = true;
       } else {
@@ -1484,6 +1604,7 @@
           throw new Error(err.message || "Failed to update user");
         }
 
+        await pushAuditLog("User Management", "UPDATE", username, `Updated user details (Role: ${role})`);
         alert(`User details for ${username} updated successfully!`);
         closeEditModal();
         loadDataFromDb();
@@ -1492,7 +1613,7 @@
       }
     };
 
-    // --- 8. STATEMENT & REPORT GENERATOR ---
+    // --- 10. STATEMENT & REPORT GENERATOR ---
     window.generateReport = function() {
       if (CURRENT_USER?.role === 'user_emp') return;
 
@@ -1726,9 +1847,10 @@
       renderProducts();
       renderSales();
       renderUsers();
+      renderAuditLogs();
     }
 
-    // --- 9. FORM HANDLERS & DB ACTIONS ---
+    // --- 11. FORM HANDLERS & DB ACTIONS (WITH AUDIT LOGGING) ---
     window.saveUserAccount = async function(e) {
       e.preventDefault();
       const username = document.getElementById('usr_username').value.trim().toLowerCase();
@@ -1763,6 +1885,7 @@
         return;
       }
 
+      await pushAuditLog("User Management", "CREATE", username, `Created account for ${full_name} with role ${role}`);
       alert(`Account created successfully for ${full_name}!`);
       document.getElementById('userForm').reset();
       loadDataFromDb();
@@ -1771,13 +1894,15 @@
     window.saveRawMaterial = async function(e) {
       e.preventDefault();
       const code = document.getElementById('rm_code').value.trim().toUpperCase();
+      const name = document.getElementById('rm_name').value.trim();
+      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
 
       const newRM = {
         code,
         category: document.getElementById('rm_category').value,
         unit: document.getElementById('rm_unit').value,
         supplier: document.getElementById('rm_supplier').value,
-        name: document.getElementById('rm_name').value,
+        name,
         rate: parseFloat(document.getElementById('rm_rate').value) || 0,
         gst: parseFloat(document.getElementById('rm_gst').value) || 0,
         opening: parseFloat(document.getElementById('rm_opening').value) || 0,
@@ -1786,6 +1911,7 @@
         batch: document.getElementById('rm_batch').value,
         pdate: document.getElementById('rm_pdate').value || null,
         edate: document.getElementById('rm_edate').value || null,
+        created_by: creator
       };
 
       const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials`, {
@@ -1800,6 +1926,7 @@
         return;
       }
 
+      await pushAuditLog("Raw Materials", "CREATE", code, `Added Raw Material: ${name}`);
       document.getElementById('rmForm').reset();
       loadDataFromDb();
     };
@@ -1834,6 +1961,7 @@
       const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
       const subtotal = qty * rate;
       const total = subtotal + (subtotal * (gst / 100));
+      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
 
       const newPurchase = {
         supplier: document.getElementById('pur_supplier').value,
@@ -1848,6 +1976,7 @@
         pdate: document.getElementById('pur_pdate').value || null,
         edate: document.getElementById('pur_edate').value || null,
         remarks: document.getElementById('pur_remarks').value,
+        created_by: creator
       };
 
       const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases`, {
@@ -1862,6 +1991,7 @@
         return;
       }
 
+      await pushAuditLog("Purchases", "CREATE", code, `Logged inward purchase: ${qty} units (₹${total.toFixed(2)})`);
       document.getElementById('purchaseForm').reset();
       loadDataFromDb();
     };
@@ -1869,17 +1999,20 @@
     window.saveProduct = async function(e) {
       e.preventDefault();
       const code = document.getElementById('prd_code').value.trim().toUpperCase();
+      const name = document.getElementById('prd_name').value.trim();
+      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
 
       const newProduct = {
         code,
         category: document.getElementById('prd_category').value,
         unit: document.getElementById('prd_unit').value,
-        name: document.getElementById('prd_name').value,
+        name,
         rate: parseFloat(document.getElementById('prd_rate').value) || 0,
         gst: parseFloat(document.getElementById('prd_gst').value) || 0,
         opening: parseFloat(document.getElementById('prd_opening').value) || 0,
         reorder: parseFloat(document.getElementById('prd_reorder').value) || 0,
         location: document.getElementById('prd_location').value,
+        created_by: creator
       };
 
       const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/products`, {
@@ -1894,6 +2027,7 @@
         return;
       }
 
+      await pushAuditLog("Products", "CREATE", code, `Created Finished Product Master: ${name}`);
       document.getElementById('prodForm').reset();
       loadDataFromDb();
     };
@@ -1925,14 +2059,16 @@
       const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
       const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
       const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
+      const customer = document.getElementById('sale_customer').value.trim();
       const subtotal = qty * rate;
       const total = subtotal + (subtotal * (gst / 100));
+      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
       
       const estimatedCogs = subtotal * 0.60;
       const grossProfit = subtotal - estimatedCogs;
 
       const newSale = {
-        customer: document.getElementById('sale_customer').value,
+        customer,
         product_code: code,
         name: document.getElementById('sale_prd_name').value,
         qty,
@@ -1944,6 +2080,7 @@
         gross_profit: grossProfit,
         sale_date: document.getElementById('sale_date').value || new Date().toISOString().slice(0,10),
         remarks: document.getElementById('sale_remarks').value,
+        created_by: creator
       };
 
       const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/sales`, {
@@ -1958,12 +2095,13 @@
         return;
       }
 
+      await pushAuditLog("Sales", "CREATE", code, `Generated invoice for ${customer}: ${qty} pcs (₹${total.toFixed(2)})`);
       document.getElementById('salesForm').reset();
       loadDataFromDb();
       if (CURRENT_USER?.role !== 'user_emp') switchTab('dashboard');
     };
 
-    // --- 10. SECURE RPC DELETIONS (Admin@175 & M@lay@!3) ---
+    // --- 12. SECURE RPC DELETIONS (WITH AUDIT LOGGING) ---
     window.secureDelete = async function(table, id) {
       if (CURRENT_USER?.role === 'user_emp') {
         alert("Unauthorized: Operations staff cannot delete records.");
@@ -1989,6 +2127,7 @@
           throw new Error(err.message || "Incorrect password or unauthorized action.");
         }
 
+        await pushAuditLog(table, "DELETE", id, `Deleted record from ${table}`);
         loadDataFromDb();
       } catch (err) {
         alert("Deletion Blocked: " + err.message);
