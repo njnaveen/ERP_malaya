@@ -1460,6 +1460,7 @@
       });
     }
 
+    // --- 8. AUDIT LOGS RENDERER ---
     function renderAuditLogs() {
       const tbody = document.getElementById('audit-tbody');
       tbody.innerHTML = '';
@@ -1534,7 +1535,7 @@
       });
     }
 
-    // --- 8. USER MANAGEMENT MODAL ---
+    // --- 9. USER MANAGEMENT MODAL ---
     window.openEditModal = function(userId) {
       const user = DB.users.find(u => u.id === userId);
       if (!user) return;
@@ -1612,7 +1613,7 @@
       }
     };
 
-    // --- 9. STATEMENT & REPORT GENERATOR ---
+    // --- 10. STATEMENT & REPORT GENERATOR ---
     window.generateReport = function() {
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
@@ -1847,7 +1848,7 @@
       renderAuditLogs();
     }
 
-    // --- 10. FORM HANDLERS & DB ACTIONS ---
+    // --- 11. FORM HANDLERS & DB ACTIONS ---
     window.saveUserAccount = async function(e) {
       e.preventDefault();
       const username = document.getElementById('usr_username').value.trim().toLowerCase();
@@ -2098,10 +2099,15 @@
       switchTab('dashboard');
     };
 
-    // --- 11. SECURE RPC DELETIONS ---
+    // --- 12. DYNAMIC CREDENTIAL-BASED DELETIONS (ZERO STATIC PASSWORDS) ---
     window.secureDelete = async function(table, id) {
-      const pass = prompt("Enter Administrative Authorization Password:");
-      if (pass === null) return;
+      if (!CURRENT_USER || (CURRENT_USER.role !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'user_full')) {
+        alert("Unauthorized: You do not have permissions to delete records.");
+        return;
+      }
+
+      const pass = prompt(`Authentication Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
+      if (!pass) return;
 
       try {
         const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
@@ -2110,16 +2116,18 @@
           body: JSON.stringify({
             target_table: table,
             record_id: id,
-            auth_passcode: pass
+            calling_username: CURRENT_USER.username,
+            user_password: pass
           })
         });
 
+        const result = await res.json();
+
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Incorrect password or unauthorized action.");
+          throw new Error(result.message || "Authentication failed or unauthorized action.");
         }
 
-        await pushAuditLog(table, "DELETE", id, `Deleted record from ${table}`);
+        await pushAuditLog(table, "DELETE", id, `Deleted record from ${table} (Authorized by ${CURRENT_USER.username})`);
         loadDataFromDb();
       } catch (err) {
         alert("Deletion Blocked: " + err.message);
