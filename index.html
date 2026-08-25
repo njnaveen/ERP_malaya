@@ -764,55 +764,66 @@
       <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm"></div>
     </section>
 
-    <!-- TAB 6: AUDIT & ACTIVITY LOGS (NEW AUDIT MODULE) -->
-    <section id="sec-audit-logs" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
-          <div>
-            <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
-              <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
-            </h2>
-            <p class="text-xs text-slate-500 mt-0.5">Real-time unalterable record of all system entries, modifications, and deletions</p>
-          </div>
-          
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
-              <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
-                <option value="ALL">All Operational Modules</option>
-                <option value="Raw Materials">Raw Material Master</option>
-                <option value="Purchases">Purchase Inward</option>
-                <option value="Products">Product Master</option>
-                <option value="Sales">Sales Register</option>
-                <option value="User Management">User & RBAC Management</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
-              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
-            </div>
-          </div>
+    <!-- TAB 6: AUDIT & ACTIVITY LOGS -->
+<section id="sec-audit-logs" class="hidden space-y-6">
+  <div class="bg-white p-5 rounded-lg border shadow-sm">
+    <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
+          </h2>
+          <!-- 90-Day Retention Notice Badge -->
+          <span class="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> 90-Day Retention Policy
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">
+          Real-time record of all system entries, modifications, and deletions. 
+          <span class="text-amber-700 font-medium font-mono text-[11px] block sm:inline sm:ml-1">
+            (Notice: Logs are stored for 90 days / 3 months; older records are permanently purged automatically.)
+          </span>
+        </p>
+      </div>
+      
+      <div class="flex flex-wrap items-center gap-3">
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
+          <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
+            <option value="ALL">All Operational Modules</option>
+            <option value="Raw Materials">Raw Material Master</option>
+            <option value="Purchases">Purchase Inward</option>
+            <option value="Products">Product Master</option>
+            <option value="Sales">Sales Register</option>
+            <option value="User Management">User & RBAC Management</option>
+          </select>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">TIMESTAMP</th>
-                <th class="p-3">MODULE</th>
-                <th class="p-3">ACTION TYPE</th>
-                <th class="p-3">ITEM IDENTIFIER / CODE</th>
-                <th class="p-3">TRANSACTION DETAILS</th>
-                <th class="p-3">PERFORMED BY</th>
-              </tr>
-            </thead>
-            <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
+        <div>
+          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
+          <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
         </div>
       </div>
-    </section>
+    </div>
 
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left whitespace-nowrap">
+        <thead class="bg-slate-100 text-slate-600 border-b">
+          <tr>
+            <th class="p-3">TIMESTAMP</th>
+            <th class="p-3">MODULE</th>
+            <th class="p-3">ACTION TYPE</th>
+            <th class="p-3">ITEM IDENTIFIER / CODE</th>
+            <th class="p-3">TRANSACTION DETAILS</th>
+            <th class="p-3">PERFORMED BY</th>
+          </tr>
+        </thead>
+        <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+    
     <!-- TAB 7: USER MANAGEMENT -->
     <section id="sec-user-mgmt" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-lg border shadow-sm">
