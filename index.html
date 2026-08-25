@@ -49,12 +49,12 @@
       <h2 class="text-2xl font-black text-slate-900 tracking-wider">LZEBRA <span class="text-emerald-600">ERP</span></h2>
       <p class="text-xs text-slate-500 mt-1 mb-6">Enter your authorized credentials to access workspace</p>
 
-      <form onsubmit="handleLogin(event)" class="space-y-4 text-left text-xs">
+      <form onsubmit="handleLogin(event)" autocomplete="off" class="space-y-4 text-left text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">USERNAME</label>
           <div class="relative">
             <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
-            <input required id="login_username" placeholder="e.g. admin, malaya, emp01" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
+            <input required id="login_username" autocomplete="username" placeholder="e.g. admin, malaya, emp01" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
           </div>
         </div>
 
@@ -65,7 +65,7 @@
           </div>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400"></i>
-            <input required type="password" id="login_password" placeholder="••••••••" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
+            <input required type="password" id="login_password" autocomplete="new-password" placeholder="••••••••" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
           </div>
         </div>
 
@@ -142,7 +142,7 @@
       <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
         <i class="fa-solid fa-user-pen text-purple-600"></i> Update Employee / User Details
       </h3>
-      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or reset password.</p>
+      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or update password.</p>
 
       <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <input type="hidden" id="edit_user_id">
@@ -765,65 +765,64 @@
     </section>
 
     <!-- TAB 6: AUDIT & ACTIVITY LOGS -->
-<section id="sec-audit-logs" class="hidden space-y-6">
-  <div class="bg-white p-5 rounded-lg border shadow-sm">
-    <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
-      <div>
-        <div class="flex items-center gap-2">
-          <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
-          </h2>
-          <!-- 90-Day Retention Notice Badge -->
-          <span class="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
-            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> 90-Day Retention Policy
-          </span>
-        </div>
-        <p class="text-xs text-slate-500 mt-1">
-          Real-time record of all system entries, modifications, and deletions. 
-          <span class="text-amber-700 font-medium font-mono text-[11px] block sm:inline sm:ml-1">
-            (Notice: Logs are stored for 90 days / 3 months; older records are permanently purged automatically.)
-          </span>
-        </p>
-      </div>
-      
-      <div class="flex flex-wrap items-center gap-3">
-        <div>
-          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
-          <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
-            <option value="ALL">All Operational Modules</option>
-            <option value="Raw Materials">Raw Material Master</option>
-            <option value="Purchases">Purchase Inward</option>
-            <option value="Products">Product Master</option>
-            <option value="Sales">Sales Register</option>
-            <option value="User Management">User & RBAC Management</option>
-          </select>
+    <section id="sec-audit-logs" class="hidden space-y-6">
+      <div class="bg-white p-5 rounded-lg border shadow-sm">
+        <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
+              </h2>
+              <span class="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> 90-Day Retention Policy
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+              Real-time record of all system entries, modifications, and deletions. 
+              <span class="text-amber-700 font-medium font-mono text-[11px] block sm:inline sm:ml-1">
+                (Notice: Logs are stored for 90 days / 3 months; older records are permanently purged automatically.)
+              </span>
+            </p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
+              <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
+                <option value="ALL">All Operational Modules</option>
+                <option value="Raw Materials">Raw Material Master</option>
+                <option value="Purchases">Purchase Inward</option>
+                <option value="Products">Product Master</option>
+                <option value="Sales">Sales Register</option>
+                <option value="User Management">User & RBAC Management</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
+              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
-          <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-600 border-b">
+              <tr>
+                <th class="p-3">TIMESTAMP</th>
+                <th class="p-3">MODULE</th>
+                <th class="p-3">ACTION TYPE</th>
+                <th class="p-3">ITEM IDENTIFIER / CODE</th>
+                <th class="p-3">TRANSACTION DETAILS</th>
+                <th class="p-3">PERFORMED BY</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
+          </table>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs text-left whitespace-nowrap">
-        <thead class="bg-slate-100 text-slate-600 border-b">
-          <tr>
-            <th class="p-3">TIMESTAMP</th>
-            <th class="p-3">MODULE</th>
-            <th class="p-3">ACTION TYPE</th>
-            <th class="p-3">ITEM IDENTIFIER / CODE</th>
-            <th class="p-3">TRANSACTION DETAILS</th>
-            <th class="p-3">PERFORMED BY</th>
-          </tr>
-        </thead>
-        <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
-      </table>
-    </div>
-  </div>
-</section>
-    
     <!-- TAB 7: USER MANAGEMENT -->
     <section id="sec-user-mgmt" class="hidden space-y-6">
       <div class="bg-white p-5 rounded-lg border shadow-sm">
@@ -941,7 +940,7 @@
       }
     }
 
-    // --- 3. AUTHENTICATION & SESSION MANAGEMENT ---
+    // --- 3. AUTHENTICATION & REMEMBER USERNAME ---
     window.handleLogin = async function(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
@@ -970,7 +969,13 @@
           role: user.role
         };
 
+        // Save session and remember ONLY the username
         localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
+        localStorage.setItem('LZEBRA_REMEMBERED_USERNAME', user.username);
+
+        // Clear password input value immediately after sign-in
+        document.getElementById('login_password').value = '';
+
         await pushAuditLog("Authentication", "LOGIN", user.username, "User logged in successfully");
         applyUserSession();
         loadDataFromDb();
@@ -986,11 +991,20 @@
       if (CURRENT_USER) {
         await pushAuditLog("Authentication", "LOGOUT", CURRENT_USER.username, "User logged out");
       }
+      
+      // Clear active session
       localStorage.removeItem('LZEBRA_AUTH_SESSION');
       CURRENT_USER = null;
+
+      // Retrieve remembered username
+      const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME') || '';
+
+      // Show login screen with username preserved and password wiped
       document.getElementById('login-modal').classList.remove('hidden');
       document.getElementById('user-display').textContent = "Not Signed In";
       document.getElementById('role-badge').textContent = "GUEST";
+      document.getElementById('login_username').value = rememberedUser;
+      document.getElementById('login_password').value = '';
     };
 
     function applyUserSession() {
@@ -1162,6 +1176,10 @@
     window.switchTab = function(tabId) {
       if (CURRENT_USER?.role === 'user_emp' && (tabId === 'dashboard' || tabId === 'reports' || tabId === 'user-mgmt' || tabId === 'audit-logs')) {
         alert("Access Denied: You do not have permission to view this resource.");
+        return;
+      }
+      if (CURRENT_USER?.role === 'user_full' && tabId === 'user-mgmt' && CURRENT_USER.username !== 'malaya') {
+        alert("Access Denied: User Management is restricted.");
         return;
       }
 
@@ -2147,6 +2165,11 @@
 
     // Auto-load on startup
     window.addEventListener('DOMContentLoaded', () => {
+      const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME');
+      if (rememberedUser) {
+        document.getElementById('login_username').value = rememberedUser;
+      }
+      document.getElementById('login_password').value = '';
       applyUserSession();
       if (CURRENT_USER) loadDataFromDb();
     });
