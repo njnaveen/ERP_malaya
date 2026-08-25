@@ -54,7 +54,7 @@
           <label class="font-bold text-slate-600 block mb-1">USERNAME</label>
           <div class="relative">
             <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
-            <input required id="login_username" autocomplete="username" placeholder="e.g. admin, malaya, emp01" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
+            <input required id="login_username" autocomplete="username" placeholder="e.g. admin, malaya" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
           </div>
         </div>
 
@@ -77,7 +77,7 @@
       </form>
 
       <div class="mt-6 pt-4 border-t text-[11px] text-slate-400">
-        LZebra Enterprise Security & RBAC Access
+        LZebra Enterprise Security & Server-Side Auth
       </div>
     </div>
   </div>
@@ -96,7 +96,7 @@
       <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
-          <input required id="rst_username" placeholder="e.g. malaya, emp01" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+          <input required id="rst_username" placeholder="e.g. malaya" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
         </div>
         <button type="submit" id="btn-lookup-user" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
           Continue
@@ -140,9 +140,9 @@
       <button type="button" onclick="closeEditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
 
       <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
-        <i class="fa-solid fa-user-pen text-purple-600"></i> Update Employee / User Details
+        <i class="fa-solid fa-user-pen text-purple-600"></i> Update User Profile
       </h3>
-      <p class="text-xs text-slate-500 mb-4">Modify profile info, security question, or update password.</p>
+      <p class="text-xs text-slate-500 mb-4">Modify name, mobile, security question, or update password.</p>
 
       <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <input type="hidden" id="edit_user_id">
@@ -154,7 +154,7 @@
 
         <div>
           <label class="font-bold text-slate-600">NEW PASSWORD (OPTIONAL)</label>
-          <input type="password" id="edit_password" placeholder="Leave empty to keep current" class="mt-1 w-full border p-2 rounded bg-slate-50">
+          <input type="password" id="edit_password" placeholder="Leave blank to keep current" class="mt-1 w-full border p-2 rounded bg-slate-50">
         </div>
 
         <div>
@@ -179,16 +179,15 @@
         </div>
 
         <div>
-          <label class="font-bold text-slate-600">SECRET ANSWER *</label>
-          <input required id="edit_sec_answer" class="mt-1 w-full border p-2 rounded">
+          <label class="font-bold text-slate-600">SECRET ANSWER (OPTIONAL)</label>
+          <input id="edit_sec_answer" placeholder="Leave blank to keep current" class="mt-1 w-full border p-2 rounded">
         </div>
 
         <div>
-          <label class="font-bold text-slate-600">ROLE / PERMISSION LEVEL *</label>
+          <label class="font-bold text-slate-600">ROLE LEVEL *</label>
           <select required id="edit_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-            <option value="user_emp">Operations Employee (Limited)</option>
-            <option value="user_full">Malaya (Full Resources + User Mgmt)</option>
-            <option value="admin">System Administrator (Root Level)</option>
+            <option value="user_full">Malaya (Full Access)</option>
+            <option value="admin">System Administrator</option>
           </select>
         </div>
 
@@ -250,10 +249,10 @@
     <button type="button" onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
       <i class="fa-solid fa-print text-indigo-600"></i> REPORTS & PRINT
     </button>
-    <button type="button" onclick="switchTab('audit-logs')" id="tab-audit-logs" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer hidden">
+    <button type="button" onclick="switchTab('audit-logs')" id="tab-audit-logs" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
       <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> AUDIT LOGS
     </button>
-    <button type="button" onclick="switchTab('user-mgmt')" id="tab-user-mgmt" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer hidden">
+    <button type="button" onclick="switchTab('user-mgmt')" id="tab-user-mgmt" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
       <i class="fa-solid fa-users-gear text-purple-600"></i> USER MANAGEMENT
     </button>
   </nav>
@@ -863,7 +862,6 @@
           <div class="sm:col-span-2">
             <label class="font-semibold text-slate-600">ROLE / ACCESS LEVEL *</label>
             <select required id="usr_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-              <option value="user_emp">Operations Employee (Limited)</option>
               <option value="user_full">Malaya (Full Resources + User Mgmt)</option>
               <option value="admin">System Administrator (Root Level)</option>
             </select>
@@ -940,7 +938,7 @@
       }
     }
 
-    // --- 3. AUTHENTICATION & REMEMBER USERNAME ---
+    // --- 3. SERVER-SIDE RPC AUTHENTICATION (SAFE PATTERN) ---
     window.handleLogin = async function(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
@@ -952,16 +950,21 @@
       btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Authenticating...`;
 
       try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=*`, {
-          headers: getHeaders()
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/authenticate_erp_user`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_username: usernameInput,
+            p_password: passwordInput
+          })
         });
-        const users = await res.json();
 
-        if (!users || users.length === 0 || users[0].password !== passwordInput) {
-          throw new Error("Invalid Username or Password.");
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Invalid Username or Password.");
         }
 
-        const user = users[0];
+        const user = await res.json();
         CURRENT_USER = {
           username: user.username,
           fullName: user.full_name,
@@ -969,14 +972,12 @@
           role: user.role
         };
 
-        // Save session and remember ONLY the username
         localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
         localStorage.setItem('LZEBRA_REMEMBERED_USERNAME', user.username);
 
-        // Clear password input value immediately after sign-in
         document.getElementById('login_password').value = '';
 
-        await pushAuditLog("Authentication", "LOGIN", user.username, "User logged in successfully");
+        await pushAuditLog("Authentication", "LOGIN", user.username, "User logged in successfully (Server-Side Verified)");
         applyUserSession();
         loadDataFromDb();
       } catch (err) {
@@ -992,14 +993,11 @@
         await pushAuditLog("Authentication", "LOGOUT", CURRENT_USER.username, "User logged out");
       }
       
-      // Clear active session
       localStorage.removeItem('LZEBRA_AUTH_SESSION');
       CURRENT_USER = null;
 
-      // Retrieve remembered username
       const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME') || '';
 
-      // Show login screen with username preserved and password wiped
       document.getElementById('login-modal').classList.remove('hidden');
       document.getElementById('user-display').textContent = "Not Signed In";
       document.getElementById('role-badge').textContent = "GUEST";
@@ -1022,40 +1020,22 @@
       const dashTab = document.getElementById('tab-dashboard');
       const reportsTab = document.getElementById('tab-reports');
 
-      const hasPrivilegedRights = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full');
-
       if (CURRENT_USER.role === 'admin') {
         roleBadge.textContent = "ADMINISTRATOR";
         roleBadge.className = "text-[10px] bg-purple-950 text-purple-300 font-mono px-2 py-0.5 rounded border border-purple-800 uppercase";
-      } else if (CURRENT_USER.username === 'malaya' || CURRENT_USER.role === 'user_full') {
+      } else {
         roleBadge.textContent = "MALAYA (FULL)";
         roleBadge.className = "text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase";
-      } else {
-        roleBadge.textContent = "OPERATIONS (EMP)";
-        roleBadge.className = "text-[10px] bg-blue-950 text-blue-300 font-mono px-2 py-0.5 rounded border border-blue-800 uppercase";
       }
 
-      if (CURRENT_USER.role === 'user_emp') {
-        userMgmtTab.classList.add('hidden');
-        auditLogsTab.classList.add('hidden');
-        dashTab.style.display = 'none';
-        reportsTab.style.display = 'none';
-        switchTab('rm-master');
-      } else {
-        dashTab.style.display = 'flex';
-        reportsTab.style.display = 'flex';
-        if (hasPrivilegedRights) {
-          userMgmtTab.classList.remove('hidden');
-          auditLogsTab.classList.remove('hidden');
-        } else {
-          userMgmtTab.classList.add('hidden');
-          auditLogsTab.classList.add('hidden');
-        }
-        switchTab('dashboard');
-      }
+      dashTab.style.display = 'flex';
+      reportsTab.style.display = 'flex';
+      userMgmtTab.classList.remove('hidden');
+      auditLogsTab.classList.remove('hidden');
+      switchTab('dashboard');
     }
 
-    // --- 4. SECURITY Q&A PASSWORD RESET ---
+    // --- 4. SERVER-SIDE RECOVERY (SAFE RPC) ---
     window.openResetModal = function() {
       document.getElementById('reset-modal').classList.remove('hidden');
       document.getElementById('reset-step-1').classList.remove('hidden');
@@ -1088,7 +1068,7 @@
       btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Finding Profile...`;
 
       try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=*`, {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=username,sec_question`, {
           headers: getHeaders()
         });
         const users = await res.json();
@@ -1113,7 +1093,7 @@
 
     window.verifyAnswerAndChangePassword = async function(e) {
       e.preventDefault();
-      const enteredAnswer = document.getElementById('rst_answer').value.trim().toLowerCase();
+      const enteredAnswer = document.getElementById('rst_answer').value.trim();
       const newPass = document.getElementById('rst_newpass').value.trim();
       const confPass = document.getElementById('rst_confpass').value.trim();
       const errBox = document.getElementById('reset-err');
@@ -1122,14 +1102,6 @@
 
       errBox.classList.add('hidden');
       succBox.classList.add('hidden');
-
-      const expectedAnswer = (RESET_STATE.userRecord.sec_answer || '').trim().toLowerCase();
-
-      if (enteredAnswer !== expectedAnswer) {
-        errBox.textContent = "Incorrect answer to security question. Please try again.";
-        errBox.classList.remove('hidden');
-        return;
-      }
 
       if (newPass.length < 6) {
         errBox.textContent = "New password must be at least 6 characters.";
@@ -1146,15 +1118,22 @@
       btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Updating Password...`;
 
       try {
-        const updateRes = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${RESET_STATE.userRecord.username}`, {
-          method: 'PATCH',
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/reset_password_with_security_qa`, {
+          method: 'POST',
           headers: getHeaders(),
-          body: JSON.stringify({ password: newPass })
+          body: JSON.stringify({
+            p_username: RESET_STATE.userRecord.username,
+            p_answer: enteredAnswer,
+            p_new_password: newPass
+          })
         });
 
-        if (!updateRes.ok) throw new Error("Failed to update password in database.");
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Incorrect answer or verification failed.");
+        }
 
-        await pushAuditLog("User Management", "PASSWORD_RESET", RESET_STATE.userRecord.username, "Password reset via security Q&A");
+        await pushAuditLog("User Management", "PASSWORD_RESET", RESET_STATE.userRecord.username, "Password reset successfully via verified security Q&A");
 
         succBox.textContent = "Password updated successfully! Redirecting to sign in...";
         succBox.classList.remove('hidden');
@@ -1174,15 +1153,6 @@
 
     // --- 5. NAVIGATION TAB CONTROLLER ---
     window.switchTab = function(tabId) {
-      if (CURRENT_USER?.role === 'user_emp' && (tabId === 'dashboard' || tabId === 'reports' || tabId === 'user-mgmt' || tabId === 'audit-logs')) {
-        alert("Access Denied: You do not have permission to view this resource.");
-        return;
-      }
-      if (CURRENT_USER?.role === 'user_full' && tabId === 'user-mgmt' && CURRENT_USER.username !== 'malaya') {
-        alert("Access Denied: User Management is restricted.");
-        return;
-      }
-
       const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
       tabs.forEach(t => {
         const sec = document.getElementById('sec-' + t);
@@ -1226,7 +1196,7 @@
           fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.desc`, { headers: getHeaders() }),
           fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.desc`, { headers: getHeaders() }),
           fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=*&order=created_at.desc`, { headers: getHeaders() }),
+          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=id,username,full_name,phone,role,sec_question&order=created_at.desc`, { headers: getHeaders() }),
           fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_audit_logs?select=*&order=created_at.desc&limit=200`, { headers: getHeaders() })
         ]);
 
@@ -1490,7 +1460,6 @@
       });
     }
 
-    // --- 8. AUDIT LOGS RENDERER ---
     function renderAuditLogs() {
       const tbody = document.getElementById('audit-tbody');
       tbody.innerHTML = '';
@@ -1543,10 +1512,8 @@
         let roleBadge = '';
         if (u.role === 'admin') {
           roleBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold text-[10px]">ADMINISTRATOR</span>`;
-        } else if (u.role === 'user_full' || u.username === 'malaya') {
-          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">MALAYA (FULL)</span>`;
         } else {
-          roleBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold text-[10px]">OPERATIONS (EMP)</span>`;
+          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">MALAYA (FULL)</span>`;
         }
 
         tbody.innerHTML += `
@@ -1567,7 +1534,7 @@
       });
     }
 
-    // --- 9. EDIT / UPDATE USER FUNCTIONS ---
+    // --- 8. USER MANAGEMENT MODAL ---
     window.openEditModal = function(userId) {
       const user = DB.users.find(u => u.id === userId);
       if (!user) return;
@@ -1577,8 +1544,8 @@
       document.getElementById('edit_fullname').value = user.full_name || '';
       document.getElementById('edit_phone').value = user.phone || '';
       document.getElementById('edit_sec_question').value = user.sec_question || 'What was the name of your first school?';
-      document.getElementById('edit_sec_answer').value = user.sec_answer || '';
-      document.getElementById('edit_role').value = user.role || 'user_emp';
+      document.getElementById('edit_sec_answer').value = '';
+      document.getElementById('edit_role').value = user.role || 'user_full';
       document.getElementById('edit_password').value = '';
 
       if (user.username === 'admin') {
@@ -1609,7 +1576,6 @@
         full_name,
         phone,
         sec_question,
-        sec_answer,
         role: username === 'admin' ? 'admin' : role
       };
 
@@ -1619,6 +1585,10 @@
           return;
         }
         updatePayload.password = newPassword;
+      }
+
+      if (sec_answer.length > 0) {
+        updatePayload.sec_answer = sec_answer.toLowerCase();
       }
 
       try {
@@ -1642,10 +1612,8 @@
       }
     };
 
-    // --- 10. STATEMENT & REPORT GENERATOR ---
+    // --- 9. STATEMENT & REPORT GENERATOR ---
     window.generateReport = function() {
-      if (CURRENT_USER?.role === 'user_emp') return;
-
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
       const canvas = document.getElementById('print-canvas');
@@ -1879,7 +1847,7 @@
       renderAuditLogs();
     }
 
-    // --- 11. FORM HANDLERS & DB ACTIONS (WITH AUDIT LOGGING) ---
+    // --- 10. FORM HANDLERS & DB ACTIONS ---
     window.saveUserAccount = async function(e) {
       e.preventDefault();
       const username = document.getElementById('usr_username').value.trim().toLowerCase();
@@ -1900,7 +1868,7 @@
         return;
       }
 
-      const newUser = { username, password, full_name, phone, sec_question, sec_answer, role };
+      const newUser = { username, password, full_name, phone, sec_question, sec_answer: sec_answer.toLowerCase(), role };
 
       const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users`, {
         method: 'POST',
@@ -1914,7 +1882,7 @@
         return;
       }
 
-      await pushAuditLog("User Management", "CREATE", username, `Created account for ${full_name} with role ${role}`);
+      await pushAuditLog("User Management", "CREATE", username, `Created user account for ${full_name}`);
       alert(`Account created successfully for ${full_name}!`);
       document.getElementById('userForm').reset();
       loadDataFromDb();
@@ -2056,7 +2024,7 @@
         return;
       }
 
-      await pushAuditLog("Products", "CREATE", code, `Created Finished Product Master: ${name}`);
+      await pushAuditLog("Products", "CREATE", code, `Created Finished Product: ${name}`);
       document.getElementById('prodForm').reset();
       loadDataFromDb();
     };
@@ -2127,16 +2095,11 @@
       await pushAuditLog("Sales", "CREATE", code, `Generated invoice for ${customer}: ${qty} pcs (₹${total.toFixed(2)})`);
       document.getElementById('salesForm').reset();
       loadDataFromDb();
-      if (CURRENT_USER?.role !== 'user_emp') switchTab('dashboard');
+      switchTab('dashboard');
     };
 
-    // --- 12. SECURE RPC DELETIONS (WITH AUDIT LOGGING) ---
+    // --- 11. SECURE RPC DELETIONS ---
     window.secureDelete = async function(table, id) {
-      if (CURRENT_USER?.role === 'user_emp') {
-        alert("Unauthorized: Operations staff cannot delete records.");
-        return;
-      }
-
       const pass = prompt("Enter Administrative Authorization Password:");
       if (pass === null) return;
 
