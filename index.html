@@ -434,6 +434,7 @@
           <table class="w-full text-xs text-left whitespace-nowrap">
             <thead class="bg-slate-100 text-slate-600 border-b">
               <tr>
+                <th class="p-3">ENTRY DATE & TIME</th>
                 <th class="p-3">RM CODE</th>
                 <th class="p-3">CATEGORY</th>
                 <th class="p-3">UNIT</th>
@@ -446,6 +447,8 @@
                 <th class="p-3">REORDER LEVEL</th>
                 <th class="p-3">LOCATION</th>
                 <th class="p-3">BATCH NO.</th>
+                <th class="p-3">PURCHASE DATE</th>
+                <th class="p-3">EXPIRY DATE</th>
                 <th class="p-3">LOGGED BY</th>
                 <th class="p-3">STATUS</th>
                 <th class="p-3 text-center action-col">ACTION</th>
@@ -531,6 +534,7 @@
           <table class="w-full text-xs text-left whitespace-nowrap">
             <thead class="bg-slate-100 text-slate-600 border-b">
               <tr>
+                <th class="p-3">ENTRY DATE & TIME</th>
                 <th class="p-3">SUPPLIER</th>
                 <th class="p-3">RM CODE</th>
                 <th class="p-3">RAW MATERIAL NAME</th>
@@ -612,6 +616,7 @@
           <table class="w-full text-xs text-left whitespace-nowrap">
             <thead class="bg-slate-100 text-slate-600 border-b">
               <tr>
+                <th class="p-3">ENTRY DATE & TIME</th>
                 <th class="p-3">PRODUCT CODE</th>
                 <th class="p-3">CATEGORY</th>
                 <th class="p-3">UNIT</th>
@@ -699,7 +704,8 @@
           <table class="w-full text-xs text-left whitespace-nowrap">
             <thead class="bg-slate-100 text-slate-600 border-b">
               <tr>
-                <th class="p-3">DATE</th>
+                <th class="p-3">ENTRY DATE & TIME</th>
+                <th class="p-3">SALE DATE</th>
                 <th class="p-3">CUSTOMER</th>
                 <th class="p-3">PRODUCT CODE</th>
                 <th class="p-3">PRODUCT NAME</th>
@@ -808,7 +814,7 @@
           <table class="w-full text-xs text-left whitespace-nowrap">
             <thead class="bg-slate-100 text-slate-600 border-b">
               <tr>
-                <th class="p-3">TIMESTAMP</th>
+                <th class="p-3">SYSTEM ENTRY TIMESTAMP</th>
                 <th class="p-3">MODULE</th>
                 <th class="p-3">ACTION TYPE</th>
                 <th class="p-3">ITEM IDENTIFIER / CODE</th>
@@ -916,6 +922,13 @@
         "Content-Type": "application/json",
         "Prefer": "return=representation"
       };
+    }
+
+    // Format ISO Timestamps to human readable local string
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '-';
+      const d = new Date(isoStr);
+      return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
     }
 
     // --- 2. AUDIT LOGGING HELPER ---
@@ -1337,6 +1350,7 @@
 
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(rm.created_at)}</td>
             <td class="p-3 font-mono font-bold text-emerald-700">${rm.code}</td>
             <td class="p-3">${rm.category || '-'}</td>
             <td class="p-3">${rm.unit}</td>
@@ -1349,6 +1363,8 @@
             <td class="p-3">${rm.reorder}</td>
             <td class="p-3">${rm.location || '-'}</td>
             <td class="p-3">${rm.batch || '-'}</td>
+            <td class="p-3">${rm.pdate || '-'}</td>
+            <td class="p-3">${rm.edate || '-'}</td>
             <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${rm.created_by || 'Admin'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
@@ -1373,6 +1389,7 @@
       DB.purchases.forEach((p) => {
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(p.created_at)}</td>
             <td class="p-3 font-medium">${p.supplier}</td>
             <td class="p-3 font-mono font-bold text-emerald-700">${p.rm_code}</td>
             <td class="p-3">${p.name}</td>
@@ -1407,6 +1424,7 @@
 
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(prd.created_at)}</td>
             <td class="p-3 font-mono font-bold text-slate-900">${prd.code}</td>
             <td class="p-3">${prd.category || '-'}</td>
             <td class="p-3">${prd.unit}</td>
@@ -1441,6 +1459,7 @@
       DB.sales.forEach((s) => {
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(s.created_at)}</td>
             <td class="p-3">${s.sale_date || '-'}</td>
             <td class="p-3 font-semibold text-slate-800">${s.customer}</td>
             <td class="p-3 font-mono font-bold text-slate-900">${s.product_code}</td>
@@ -1489,11 +1508,9 @@
           actionBadge = `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-trash mr-1"></i>${l.action}</span>`;
         }
 
-        const dateFormatted = new Date(l.created_at).toLocaleString();
-
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500">${dateFormatted}</td>
+            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold">${formatTimestamp(l.created_at)}</td>
             <td class="p-3 font-bold text-slate-800">${l.module}</td>
             <td class="p-3">${actionBadge}</td>
             <td class="p-3 font-mono font-bold text-purple-700">${l.record_identifier}</td>
