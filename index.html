@@ -77,7 +77,7 @@
       </form>
 
       <div class="mt-6 pt-4 border-t text-[11px] text-slate-400">
-        LZebra Enterprise Security & Server-Side Auth
+        LZebra Enterprise Security & Role-Based Access Control
       </div>
     </div>
   </div>
@@ -96,7 +96,7 @@
       <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
-          <input required id="rst_username" placeholder="e.g. malaya" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+          <input required id="rst_username" placeholder="e.g. rohit" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
         </div>
         <button type="submit" id="btn-lookup-user" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
           Continue
@@ -142,7 +142,7 @@
       <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
         <i class="fa-solid fa-user-pen text-purple-600"></i> Update User Profile
       </h3>
-      <p class="text-xs text-slate-500 mb-4">Modify name, mobile, security question, or update password.</p>
+      <p class="text-xs text-slate-500 mb-4">Modify account metadata, security question, or update password.</p>
 
       <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <input type="hidden" id="edit_user_id">
@@ -186,8 +186,9 @@
         <div>
           <label class="font-bold text-slate-600">ROLE LEVEL *</label>
           <select required id="edit_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-            <option value="user_full">Malaya (Full Access)</option>
-            <option value="admin">System Administrator</option>
+            <option value="super_user">Super Users (Dashboard, Entry & Reports)</option>
+            <option value="user">Users (Entry Tabs Only)</option>
+            <option value="admin" id="opt_edit_admin" class="hidden">Administrator</option>
           </select>
         </div>
 
@@ -210,7 +211,7 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="text-lg font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400 font-extrabold">ERP</span></h1>
-          <span id="role-badge" class="text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase">GUEST</span>
+          <span id="role-badge" class="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700 uppercase">GUEST</span>
         </div>
         <p class="text-[11px] text-slate-400">User: <span id="user-display" class="text-white font-semibold">Not Signed In</span></p>
       </div>
@@ -868,8 +869,8 @@
           <div class="sm:col-span-2">
             <label class="font-semibold text-slate-600">ROLE / ACCESS LEVEL *</label>
             <select required id="usr_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-              <option value="user_full">Malaya (Full Resources + User Mgmt)</option>
-              <option value="admin">System Administrator (Root Level)</option>
+              <option value="super_user">Super Users (Dashboard, Entry & Reports)</option>
+              <option value="user">Users (Entry Tabs Only)</option>
             </select>
           </div>
           <div class="sm:col-span-2 lg:col-span-4 flex items-end">
@@ -924,7 +925,6 @@
       };
     }
 
-    // Format ISO Timestamps to human readable local string
     function formatTimestamp(isoStr) {
       if (!isoStr) return '-';
       const d = new Date(isoStr);
@@ -978,11 +978,17 @@
         }
 
         const user = await res.json();
+        
+        let assignedRole = user.role;
+        if (user.username === 'admin' || user.username === 'malaya') {
+          assignedRole = 'admin';
+        }
+
         CURRENT_USER = {
           username: user.username,
           fullName: user.full_name,
           phone: user.phone,
-          role: user.role
+          role: assignedRole
         };
 
         localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
@@ -1018,6 +1024,7 @@
       document.getElementById('login_password').value = '';
     };
 
+    // --- 4. STRICT 3-TIER RBAC ENFORCEMENT ---
     function applyUserSession() {
       if (!CURRENT_USER) {
         document.getElementById('login-modal').classList.remove('hidden');
@@ -1033,22 +1040,40 @@
       const dashTab = document.getElementById('tab-dashboard');
       const reportsTab = document.getElementById('tab-reports');
 
-      if (CURRENT_USER.role === 'admin') {
+      const isAdministrator = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
+      const isSuperUser = (CURRENT_USER.role === 'super_user');
+
+      if (isAdministrator) {
         roleBadge.textContent = "ADMINISTRATOR";
         roleBadge.className = "text-[10px] bg-purple-950 text-purple-300 font-mono px-2 py-0.5 rounded border border-purple-800 uppercase";
+        
+        dashTab.classList.remove('hidden');
+        reportsTab.classList.remove('hidden');
+        userMgmtTab.classList.remove('hidden');
+        auditLogsTab.classList.remove('hidden');
+        switchTab('dashboard');
+      } else if (isSuperUser) {
+        roleBadge.textContent = "SUPER USER";
+        roleBadge.className = "text-[10px] bg-blue-950 text-blue-300 font-mono px-2 py-0.5 rounded border border-blue-800 uppercase";
+        
+        dashTab.classList.remove('hidden');
+        reportsTab.classList.remove('hidden');
+        userMgmtTab.classList.add('hidden');
+        auditLogsTab.classList.add('hidden');
+        switchTab('dashboard');
       } else {
-        roleBadge.textContent = "MALAYA (FULL)";
+        roleBadge.textContent = "USER";
         roleBadge.className = "text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase";
+        
+        dashTab.classList.add('hidden');
+        reportsTab.classList.add('hidden');
+        userMgmtTab.classList.add('hidden');
+        auditLogsTab.classList.add('hidden');
+        switchTab('rm-master');
       }
-
-      dashTab.style.display = 'flex';
-      reportsTab.style.display = 'flex';
-      userMgmtTab.classList.remove('hidden');
-      auditLogsTab.classList.remove('hidden');
-      switchTab('dashboard');
     }
 
-    // --- 4. SERVER-SIDE RECOVERY (SAFE RPC) ---
+    // --- 5. SERVER-SIDE RECOVERY (SAFE RPC) ---
     window.openResetModal = function() {
       document.getElementById('reset-modal').classList.remove('hidden');
       document.getElementById('reset-step-1').classList.remove('hidden');
@@ -1164,7 +1189,7 @@
       }
     };
 
-    // --- 5. NAVIGATION TAB CONTROLLER ---
+    // --- 6. NAVIGATION TAB CONTROLLER ---
     window.switchTab = function(tabId) {
       const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
       tabs.forEach(t => {
@@ -1197,7 +1222,7 @@
       if (tabId === 'audit-logs') renderAuditLogs();
     };
 
-    // --- 6. DATA SYNC ENGINE ---
+    // --- 7. DATA SYNC ENGINE ---
     window.loadDataFromDb = async function() {
       if (!CURRENT_USER) return;
       const statusEl = document.getElementById('db-status');
@@ -1230,7 +1255,7 @@
       }
     };
 
-    // --- 7. STOCK & DASHBOARD COMPUTATION ---
+    // --- 8. STOCK & DASHBOARD COMPUTATION ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -1341,6 +1366,8 @@
       tbody.innerHTML = '';
       document.getElementById('rm-count-badge').textContent = `${DB.rawMaterials.length} Items`;
 
+      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
+
       DB.rawMaterials.forEach((rm) => {
         const currentStock = getRmStock(rm.code, rm.opening);
         const isReorder = currentStock <= Number(rm.reorder);
@@ -1368,7 +1395,9 @@
             <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${rm.created_by || 'Admin'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ${isAdministrator ? `
+                <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
             </td>
           </tr>
         `;
@@ -1385,6 +1414,8 @@
       const tbody = document.getElementById('purchase-tbody');
       tbody.innerHTML = '';
       document.getElementById('purchase-count-badge').textContent = `${DB.purchases.length} Entries`;
+
+      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
 
       DB.purchases.forEach((p) => {
         tbody.innerHTML += `
@@ -1403,7 +1434,9 @@
             <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${p.created_by || 'Admin'}</td>
             <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ${isAdministrator ? `
+                <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
             </td>
           </tr>
         `;
@@ -1414,6 +1447,8 @@
       const tbody = document.getElementById('prd-tbody');
       tbody.innerHTML = '';
       document.getElementById('product-count-badge').textContent = `${DB.products.length} Products`;
+
+      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
 
       DB.products.forEach((prd) => {
         const curStock = getProductStock(prd.code, prd.opening);
@@ -1438,7 +1473,9 @@
             <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${prd.created_by || 'Admin'}</td>
             <td class="p-3">${statusBadge}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ${isAdministrator ? `
+                <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
             </td>
           </tr>
         `;
@@ -1456,6 +1493,8 @@
       tbody.innerHTML = '';
       document.getElementById('sales-count-badge').textContent = `${DB.sales.length} Invoices`;
 
+      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
+
       DB.sales.forEach((s) => {
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
@@ -1472,14 +1511,15 @@
             <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${s.created_by || 'Admin'}</td>
             <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
             <td class="p-3 text-center action-col">
-              <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ${isAdministrator ? `
+                <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
             </td>
           </tr>
         `;
       });
     }
 
-    // --- 8. AUDIT LOGS RENDERER ---
     function renderAuditLogs() {
       const tbody = document.getElementById('audit-tbody');
       tbody.innerHTML = '';
@@ -1528,11 +1568,15 @@
 
       DB.users.forEach((u) => {
         let roleBadge = '';
-        if (u.role === 'admin') {
+        if (u.username === 'admin' || u.username === 'malaya' || u.role === 'admin') {
           roleBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold text-[10px]">ADMINISTRATOR</span>`;
+        } else if (u.role === 'super_user') {
+          roleBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold text-[10px]">SUPER USER</span>`;
         } else {
-          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">MALAYA (FULL)</span>`;
+          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">USER</span>`;
         }
+
+        const isProtectedRoot = (u.username === 'admin' || u.username === 'malaya');
 
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
@@ -1543,7 +1587,7 @@
             <td class="p-3 text-slate-600 text-xs italic">${u.sec_question || 'What was the name of your first school?'}</td>
             <td class="p-3 text-center action-col flex items-center justify-center gap-2">
               <button type="button" onclick="openEditModal('${u.id}')" title="Edit User" class="text-blue-600 hover:text-blue-800 cursor-pointer p-1"><i class="fa-solid fa-pen-to-square"></i></button>
-              ${u.username !== 'admin' ? `
+              ${!isProtectedRoot ? `
                 <button type="button" onclick="secureDelete('erp_users', '${u.id}')" title="Delete User" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
               ` : `<span class="text-slate-400 text-xs italic font-semibold">Protected Root</span>`}
             </td>
@@ -1563,13 +1607,19 @@
       document.getElementById('edit_phone').value = user.phone || '';
       document.getElementById('edit_sec_question').value = user.sec_question || 'What was the name of your first school?';
       document.getElementById('edit_sec_answer').value = '';
-      document.getElementById('edit_role').value = user.role || 'user_full';
       document.getElementById('edit_password').value = '';
 
-      if (user.username === 'admin') {
-        document.getElementById('edit_role').disabled = true;
+      const editRoleSel = document.getElementById('edit_role');
+      const optAdmin = document.getElementById('opt_edit_admin');
+
+      if (user.username === 'admin' || user.username === 'malaya') {
+        optAdmin.classList.remove('hidden');
+        editRoleSel.value = 'admin';
+        editRoleSel.disabled = true;
       } else {
-        document.getElementById('edit_role').disabled = false;
+        optAdmin.classList.add('hidden');
+        editRoleSel.disabled = false;
+        editRoleSel.value = (user.role === 'super_user') ? 'super_user' : 'user';
       }
 
       document.getElementById('edit-user-modal').classList.remove('hidden');
@@ -1590,11 +1640,13 @@
       const role = document.getElementById('edit_role').value;
       const newPassword = document.getElementById('edit_password').value.trim();
 
+      const assignedRole = (username === 'admin' || username === 'malaya') ? 'admin' : role;
+
       const updatePayload = {
         full_name,
         phone,
         sec_question,
-        role: username === 'admin' ? 'admin' : role
+        role: assignedRole
       };
 
       if (newPassword.length > 0) {
@@ -1621,7 +1673,7 @@
           throw new Error(err.message || "Failed to update user");
         }
 
-        await pushAuditLog("User Management", "UPDATE", username, `Updated user details (Role: ${role})`);
+        await pushAuditLog("User Management", "UPDATE", username, `Updated user details (Role: ${assignedRole})`);
         alert(`User details for ${username} updated successfully!`);
         closeEditModal();
         loadDataFromDb();
@@ -1820,7 +1872,7 @@
                 <th class="p-2 border">Product Code</th>
                 <th class="p-2 border">Product Name</th>
                 <th class="p-2 border text-center">Unit</th>
-                <th class="p-2 border text-center">Live Stock</th>
+                <th class="p-2 border text-center font-bold">${stock}</th>
                 <th class="p-2 border text-right">Selling Price</th>
                 <th class="p-2 border text-right">Total Valuation</th>
               </tr>
@@ -1881,8 +1933,8 @@
         return;
       }
 
-      if (username === 'admin') {
-        alert("Action Prohibited: Cannot create or overwrite the root admin account.");
+      if (username === 'admin' || username === 'malaya') {
+        alert("Action Prohibited: Root Administrator accounts cannot be created or overwritten.");
         return;
       }
 
@@ -1900,7 +1952,7 @@
         return;
       }
 
-      await pushAuditLog("User Management", "CREATE", username, `Created user account for ${full_name}`);
+      await pushAuditLog("User Management", "CREATE", username, `Created account for ${full_name} with role: ${role}`);
       alert(`Account created successfully for ${full_name}!`);
       document.getElementById('userForm').reset();
       loadDataFromDb();
@@ -2113,17 +2165,19 @@
       await pushAuditLog("Sales", "CREATE", code, `Generated invoice for ${customer}: ${qty} pcs (₹${total.toFixed(2)})`);
       document.getElementById('salesForm').reset();
       loadDataFromDb();
-      switchTab('dashboard');
+      if (CURRENT_USER.role !== 'user') {
+        switchTab('dashboard');
+      }
     };
 
-    // --- 12. DYNAMIC CREDENTIAL-BASED DELETIONS (ZERO STATIC PASSWORDS) ---
+    // --- 12. DYNAMIC CREDENTIAL-BASED DELETIONS (ADMINISTRATORS ONLY) ---
     window.secureDelete = async function(table, id) {
-      if (!CURRENT_USER || (CURRENT_USER.role !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'user_full')) {
-        alert("Unauthorized: You do not have permissions to delete records.");
+      if (!CURRENT_USER || (CURRENT_USER.username !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'admin')) {
+        alert("Access Denied: Record deletion is restricted exclusively to Administrators (admin and malaya).");
         return;
       }
 
-      const pass = prompt(`Authentication Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
+      const pass = prompt(`Administrator Authorization Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
       if (!pass) return;
 
       try {
