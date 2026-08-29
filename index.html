@@ -77,7 +77,7 @@
       </form>
 
       <div class="mt-6 pt-4 border-t text-[11px] text-slate-400">
-        LZebra Enterprise Security & Role-Based Access Control
+        LZebra Enterprise Security & Session-Gated Architecture
       </div>
     </div>
   </div>
@@ -96,7 +96,7 @@
       <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
-          <input required id="rst_username" placeholder="e.g. rohit" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+          <input required id="rst_username" placeholder="e.g. test_worker_01" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
         </div>
         <button type="submit" id="btn-lookup-user" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
           Continue
@@ -784,10 +784,7 @@
               </span>
             </div>
             <p class="text-xs text-slate-500 mt-1">
-              Real-time record of all system entries, modifications, and deletions. 
-              <span class="text-amber-700 font-medium font-mono text-[11px] block sm:inline sm:ml-1">
-                (Notice: Logs are stored for 90 days / 3 months; older records are permanently purged automatically.)
-              </span>
+              Real-time record of all system entries, modifications, and deletions.
             </p>
           </div>
           
@@ -911,17 +908,17 @@
     const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
     const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
 
-    let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_SESSION')) || null;
+    let SESSION_TOKEN = localStorage.getItem('LZEBRA_SESSION_TOKEN') || null;
+    let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_USER')) || null;
     let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [], logs: [] };
 
-    let RESET_STATE = { userRecord: null };
+    let RESET_STATE = { username: null };
 
     function getHeaders() {
       return {
         "apikey": SUPABASE_KEY,
         "Authorization": "Bearer " + SUPABASE_KEY,
-        "Content-Type": "application/json",
-        "Prefer": "return=representation"
+        "Content-Type": "application/json"
       };
     }
 
@@ -931,27 +928,7 @@
       return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
     }
 
-    // --- 2. AUDIT LOGGING HELPER ---
-    async function pushAuditLog(module, action, record_identifier, details) {
-      try {
-        const actor = CURRENT_USER ? `${CURRENT_USER.fullName} (${CURRENT_USER.username})` : 'System';
-        await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_audit_logs`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            module,
-            action,
-            record_identifier,
-            details,
-            performed_by: actor
-          })
-        });
-      } catch (err) {
-        console.warn("Could not push audit log entry:", err);
-      }
-    }
-
-    // --- 3. SERVER-SIDE RPC AUTHENTICATION (SAFE PATTERN) ---
+    // --- 2. AUTHENTICATION & TOKEN HANDLING ---
     window.handleLogin = async function(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
@@ -977,28 +954,22 @@
           throw new Error(err.message || "Invalid Username or Password.");
         }
 
-        const user = await res.json();
-        
-        let assignedRole = user.role;
-        if (user.username === 'admin' || user.username === 'malaya') {
-          assignedRole = 'admin';
-        }
-
+        const authData = await res.json();
+        SESSION_TOKEN = authData.token;
         CURRENT_USER = {
-          username: user.username,
-          fullName: user.full_name,
-          phone: user.phone,
-          role: assignedRole
+          username: authData.username,
+          fullName: authData.full_name,
+          phone: authData.phone,
+          role: authData.role
         };
 
-        localStorage.setItem('LZEBRA_AUTH_SESSION', JSON.stringify(CURRENT_USER));
-        localStorage.setItem('LZEBRA_REMEMBERED_USERNAME', user.username);
+        localStorage.setItem('LZEBRA_SESSION_TOKEN', SESSION_TOKEN);
+        localStorage.setItem('LZEBRA_AUTH_USER', JSON.stringify(CURRENT_USER));
+        localStorage.setItem('LZEBRA_REMEMBERED_USERNAME', authData.username);
 
         document.getElementById('login_password').value = '';
-
-        await pushAuditLog("Authentication", "LOGIN", user.username, "User logged in successfully (Server-Side Verified)");
         applyUserSession();
-        loadDataFromDb();
+        await loadDataFromDb();
       } catch (err) {
         errBox.textContent = err.message || "Failed to sign in. Verify credentials.";
         errBox.classList.remove('hidden');
@@ -1008,11 +979,21 @@
     };
 
     window.handleLogout = async function() {
-      if (CURRENT_USER) {
-        await pushAuditLog("Authentication", "LOGOUT", CURRENT_USER.username, "User logged out");
+      if (SESSION_TOKEN) {
+        try {
+          await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/logout_erp_user`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ p_token: SESSION_TOKEN })
+          });
+        } catch (e) {
+          console.warn("Logout RPC failed:", e);
+        }
       }
       
-      localStorage.removeItem('LZEBRA_AUTH_SESSION');
+      localStorage.removeItem('LZEBRA_SESSION_TOKEN');
+      localStorage.removeItem('LZEBRA_AUTH_USER');
+      SESSION_TOKEN = null;
       CURRENT_USER = null;
 
       const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME') || '';
@@ -1024,9 +1005,9 @@
       document.getElementById('login_password').value = '';
     };
 
-    // --- 4. STRICT 3-TIER RBAC ENFORCEMENT ---
+    // --- 3. ROLE-BASED ACCESS CONTROL (UI LAYER) ---
     function applyUserSession() {
-      if (!CURRENT_USER) {
+      if (!CURRENT_USER || !SESSION_TOKEN) {
         document.getElementById('login-modal').classList.remove('hidden');
         return;
       }
@@ -1073,189 +1054,50 @@
       }
     }
 
-    // --- 5. SERVER-SIDE RECOVERY (SAFE RPC) ---
-    window.openResetModal = function() {
-      document.getElementById('reset-modal').classList.remove('hidden');
-      document.getElementById('reset-step-1').classList.remove('hidden');
-      document.getElementById('reset-step-2').classList.add('hidden');
-      document.getElementById('reset-err').classList.add('hidden');
-      document.getElementById('reset-succ').classList.add('hidden');
-      document.getElementById('reset-step-1').reset();
-      document.getElementById('reset-step-2').reset();
-      RESET_STATE.userRecord = null;
-    };
-
-    window.closeResetModal = function() {
-      document.getElementById('reset-modal').classList.add('hidden');
-    };
-
-    window.lookupSecurityQuestion = async function(e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById('rst_username').value.trim().toLowerCase();
-      const errBox = document.getElementById('reset-err');
-      const btn = document.getElementById('btn-lookup-user');
-
-      errBox.classList.add('hidden');
-
-      if (usernameInput === 'admin') {
-        errBox.textContent = "Access Denied: Root Admin credentials cannot be reset via public recovery.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Finding Profile...`;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=username,sec_question`, {
-          headers: getHeaders()
-        });
-        const users = await res.json();
-
-        if (!users || users.length === 0) {
-          throw new Error("Username not found in system directory.");
-        }
-
-        const user = users[0];
-        RESET_STATE.userRecord = user;
-
-        document.getElementById('disp-sec-question').textContent = user.sec_question || "What was the name of your first school?";
-        document.getElementById('reset-step-1').classList.add('hidden');
-        document.getElementById('reset-step-2').classList.remove('hidden');
-      } catch (err) {
-        errBox.textContent = err.message || "Failed to process request.";
-        errBox.classList.remove('hidden');
-      } finally {
-        btn.innerHTML = `Continue`;
-      }
-    };
-
-    window.verifyAnswerAndChangePassword = async function(e) {
-      e.preventDefault();
-      const enteredAnswer = document.getElementById('rst_answer').value.trim();
-      const newPass = document.getElementById('rst_newpass').value.trim();
-      const confPass = document.getElementById('rst_confpass').value.trim();
-      const errBox = document.getElementById('reset-err');
-      const succBox = document.getElementById('reset-succ');
-      const btn = document.getElementById('btn-sub-reset');
-
-      errBox.classList.add('hidden');
-      succBox.classList.add('hidden');
-
-      if (newPass.length < 6) {
-        errBox.textContent = "New password must be at least 6 characters.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      if (newPass !== confPass) {
-        errBox.textContent = "Passwords do not match.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Updating Password...`;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/reset_password_with_security_qa`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_username: RESET_STATE.userRecord.username,
-            p_answer: enteredAnswer,
-            p_new_password: newPass
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Incorrect answer or verification failed.");
-        }
-
-        await pushAuditLog("User Management", "PASSWORD_RESET", RESET_STATE.userRecord.username, "Password reset successfully via verified security Q&A");
-
-        succBox.textContent = "Password updated successfully! Redirecting to sign in...";
-        succBox.classList.remove('hidden');
-
-        setTimeout(() => {
-          closeResetModal();
-          document.getElementById('login_username').value = RESET_STATE.userRecord.username;
-          document.getElementById('login_password').value = "";
-        }, 1800);
-      } catch (err) {
-        errBox.textContent = err.message || "Error updating password.";
-        errBox.classList.remove('hidden');
-      } finally {
-        btn.innerHTML = `Verify & Save New Password`;
-      }
-    };
-
-    // --- 6. NAVIGATION TAB CONTROLLER ---
-    window.switchTab = function(tabId) {
-      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
-      tabs.forEach(t => {
-        const sec = document.getElementById('sec-' + t);
-        const btn = document.getElementById('tab-' + t);
-        if (sec) {
-          sec.classList.remove('block');
-          sec.classList.add('hidden');
-        }
-        if (btn) {
-          btn.classList.remove('tab-active');
-          btn.classList.remove('text-slate-700');
-          btn.classList.add('text-slate-500');
-        }
-      });
-
-      const activeSec = document.getElementById('sec-' + tabId);
-      const activeBtn = document.getElementById('tab-' + tabId);
-      if (activeSec) {
-        activeSec.classList.remove('hidden');
-        activeSec.classList.add('block');
-      }
-      if (activeBtn) {
-        activeBtn.classList.add('tab-active');
-        activeBtn.classList.add('text-slate-700');
-        activeBtn.classList.remove('text-slate-500');
-      }
-
-      if (tabId === 'reports') generateReport();
-      if (tabId === 'audit-logs') renderAuditLogs();
-    };
-
-    // --- 7. DATA SYNC ENGINE ---
+    // --- 4. SECURE DATA SYNCHRONIZATION ---
     window.loadDataFromDb = async function() {
-      if (!CURRENT_USER) return;
+      if (!SESSION_TOKEN) return;
       const statusEl = document.getElementById('db-status');
       statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
 
       try {
-        const [rmRes, purRes, prdRes, saleRes, usrRes, logRes] = await Promise.all([
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials?select=*&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases?select=*&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/products?select=*&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/sales?select=*&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?select=id,username,full_name,phone,role,sec_question&order=created_at.desc`, { headers: getHeaders() }),
-          fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_audit_logs?select=*&order=created_at.desc&limit=200`, { headers: getHeaders() })
-        ]);
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/fetch_erp_data_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ p_token: SESSION_TOKEN })
+        });
 
-        if (!rmRes.ok || !purRes.ok || !prdRes.ok) throw new Error('Database Sync Failed');
+        if (!res.ok) {
+          const err = await res.json();
+          if (res.status === 400 || res.status === 401 || (err.message && err.message.includes('Unauthorized'))) {
+            handleLogout();
+            return;
+          }
+          throw new Error(err.message || 'Database Sync Failed');
+        }
 
-        DB.rawMaterials = await rmRes.json();
-        DB.purchases = await purRes.json();
-        DB.products = await prdRes.json();
-        DB.sales = saleRes.ok ? await saleRes.json() : [];
-        DB.users = usrRes.ok ? await usrRes.json() : [];
-        DB.logs = logRes.ok ? await logRes.json() : [];
+        const data = await res.json();
+        DB.rawMaterials = data.rawMaterials || [];
+        DB.purchases = data.purchases || [];
+        DB.products = data.products || [];
+        DB.sales = data.sales || [];
+        DB.users = data.users || [];
+        DB.logs = data.logs || [];
+
+        if (data.currentUser) {
+          CURRENT_USER = data.currentUser;
+          localStorage.setItem('LZEBRA_AUTH_USER', JSON.stringify(CURRENT_USER));
+        }
 
         renderAll();
         statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Connected`;
       } catch (err) {
-        console.error("Supabase API Error:", err);
+        console.error("Secure Data Fetch Error:", err);
         statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error connecting`;
       }
     };
 
-    // --- 8. STOCK & DASHBOARD COMPUTATION ---
+    // --- 5. DATA RENDERING ENGINES ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -1534,7 +1376,7 @@
       });
 
       if (filteredLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">No activity log records found matching selected filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">No activity log records found.</td></tr>`;
         return;
       }
 
@@ -1596,7 +1438,17 @@
       });
     }
 
-    // --- 9. USER MANAGEMENT MODAL ---
+    function renderAll() {
+      renderDashboard();
+      renderRawMaterials();
+      renderPurchases();
+      renderProducts();
+      renderSales();
+      renderUsers();
+      renderAuditLogs();
+    }
+
+    // --- 6. USER MANAGEMENT EDIT & CREATE ---
     window.openEditModal = function(userId) {
       const user = DB.users.find(u => u.id === userId);
       if (!user) return;
@@ -1632,7 +1484,6 @@
     window.handleUpdateUser = async function(e) {
       e.preventDefault();
       const userId = document.getElementById('edit_user_id').value;
-      const username = document.getElementById('edit_username').value;
       const full_name = document.getElementById('edit_fullname').value.trim();
       const phone = document.getElementById('edit_phone').value.trim();
       const sec_question = document.getElementById('edit_sec_question').value;
@@ -1640,32 +1491,20 @@
       const role = document.getElementById('edit_role').value;
       const newPassword = document.getElementById('edit_password').value.trim();
 
-      const assignedRole = (username === 'admin' || username === 'malaya') ? 'admin' : role;
-
-      const updatePayload = {
-        full_name,
-        phone,
-        sec_question,
-        role: assignedRole
-      };
-
-      if (newPassword.length > 0) {
-        if (newPassword.length < 6) {
-          alert("New password must be at least 6 characters.");
-          return;
-        }
-        updatePayload.password = newPassword;
-      }
-
-      if (sec_answer.length > 0) {
-        updatePayload.sec_answer = sec_answer.toLowerCase();
-      }
-
       try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?id=eq.${userId}`, {
-          method: 'PATCH',
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/update_user_secure`, {
+          method: 'POST',
           headers: getHeaders(),
-          body: JSON.stringify(updatePayload)
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_user_id: userId,
+            p_full_name: full_name,
+            p_phone: phone,
+            p_sec_question: sec_question,
+            p_sec_answer: sec_answer,
+            p_role: role,
+            p_new_password: newPassword
+          })
         });
 
         if (!res.ok) {
@@ -1673,8 +1512,7 @@
           throw new Error(err.message || "Failed to update user");
         }
 
-        await pushAuditLog("User Management", "UPDATE", username, `Updated user details (Role: ${assignedRole})`);
-        alert(`User details for ${username} updated successfully!`);
+        alert(`User details updated successfully!`);
         closeEditModal();
         loadDataFromDb();
       } catch (err) {
@@ -1682,7 +1520,438 @@
       }
     };
 
-    // --- 10. STATEMENT & REPORT GENERATOR ---
+    window.saveUserAccount = async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('usr_username').value.trim().toLowerCase();
+      const password = document.getElementById('usr_password').value.trim();
+      const full_name = document.getElementById('usr_fullname').value.trim();
+      const phone = document.getElementById('usr_phone').value.trim();
+      const sec_question = document.getElementById('usr_sec_question').value;
+      const sec_answer = document.getElementById('usr_sec_answer').value.trim();
+      const role = document.getElementById('usr_role').value;
+
+      if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/register_user_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_username: username,
+            p_password: password,
+            p_full_name: full_name,
+            p_phone: phone,
+            p_sec_question: sec_question,
+            p_sec_answer: sec_answer,
+            p_role: role
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to register user");
+        }
+
+        alert(`Account created successfully for ${full_name}!`);
+        document.getElementById('userForm').reset();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Registration Error: " + err.message);
+      }
+    };
+
+    // --- 7. TRANSACTION INSERTION RPCS ---
+    window.saveRawMaterial = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('rm_code').value.trim().toUpperCase();
+      const name = document.getElementById('rm_name').value.trim();
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_raw_material_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_code: code,
+            p_category: document.getElementById('rm_category').value,
+            p_unit: document.getElementById('rm_unit').value,
+            p_supplier: document.getElementById('rm_supplier').value,
+            p_name: name,
+            p_rate: parseFloat(document.getElementById('rm_rate').value) || 0,
+            p_gst: parseFloat(document.getElementById('rm_gst').value) || 0,
+            p_opening: parseFloat(document.getElementById('rm_opening').value) || 0,
+            p_reorder: parseFloat(document.getElementById('rm_reorder').value) || 0,
+            p_location: document.getElementById('rm_location').value,
+            p_batch: document.getElementById('rm_batch').value,
+            p_pdate: document.getElementById('rm_pdate').value || null,
+            p_edate: document.getElementById('rm_edate').value || null
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to save raw material");
+        }
+
+        document.getElementById('rmForm').reset();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    window.autoFillRmPurchase = function() {
+      const code = document.getElementById('pur_rm_code').value;
+      const rm = DB.rawMaterials.find(r => r.code === code);
+      if (rm) {
+        document.getElementById('pur_rm_name').value = rm.name;
+        document.getElementById('pur_supplier').value = rm.supplier || '';
+        document.getElementById('pur_unit').value = rm.unit;
+        document.getElementById('pur_rate').value = rm.rate;
+        document.getElementById('pur_gst').value = rm.gst;
+        calcPurTotal();
+      }
+    };
+
+    window.calcPurTotal = function() {
+      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      document.getElementById('pur_total').value = '₹ ' + total.toFixed(2);
+    };
+
+    window.savePurchase = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('pur_rm_code').value;
+      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_purchase_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_supplier: document.getElementById('pur_supplier').value,
+            p_rm_code: code,
+            p_name: document.getElementById('pur_rm_name').value,
+            p_qty: qty,
+            p_unit: document.getElementById('pur_unit').value,
+            p_rate: rate,
+            p_gst: gst,
+            p_total: total,
+            p_batch: document.getElementById('pur_batch').value,
+            p_pdate: document.getElementById('pur_pdate').value || null,
+            p_edate: document.getElementById('pur_edate').value || null,
+            p_remarks: document.getElementById('pur_remarks').value
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to log purchase");
+        }
+
+        document.getElementById('purchaseForm').reset();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    window.saveProduct = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('prd_code').value.trim().toUpperCase();
+      const name = document.getElementById('prd_name').value.trim();
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_product_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_code: code,
+            p_category: document.getElementById('prd_category').value,
+            p_unit: document.getElementById('prd_unit').value,
+            p_name: name,
+            p_rate: parseFloat(document.getElementById('prd_rate').value) || 0,
+            p_gst: parseFloat(document.getElementById('prd_gst').value) || 0,
+            p_opening: parseFloat(document.getElementById('prd_opening').value) || 0,
+            p_reorder: parseFloat(document.getElementById('prd_reorder').value) || 0,
+            p_location: document.getElementById('prd_location').value
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to save product");
+        }
+
+        document.getElementById('prodForm').reset();
+        loadDataFromDb();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    window.autoFillProductSale = function() {
+      const code = document.getElementById('sale_prd_code').value;
+      const prd = DB.products.find(p => p.code === code);
+      if (prd) {
+        document.getElementById('sale_prd_name').value = prd.name;
+        document.getElementById('sale_unit').value = prd.unit;
+        document.getElementById('sale_rate').value = prd.rate;
+        document.getElementById('sale_gst').value = prd.gst;
+        calcSaleTotal();
+      }
+    };
+
+    window.calcSaleTotal = function() {
+      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      document.getElementById('sale_total').value = '₹ ' + total.toFixed(2);
+    };
+
+    window.saveSale = async function(e) {
+      e.preventDefault();
+      const code = document.getElementById('sale_prd_code').value;
+      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
+      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
+      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
+      const customer = document.getElementById('sale_customer').value.trim();
+      const subtotal = qty * rate;
+      const total = subtotal + (subtotal * (gst / 100));
+      const estimatedCogs = subtotal * 0.60;
+      const grossProfit = subtotal - estimatedCogs;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_sale_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_customer: customer,
+            p_product_code: code,
+            p_name: document.getElementById('sale_prd_name').value,
+            p_qty: qty,
+            p_unit: document.getElementById('sale_unit').value,
+            p_selling_rate: rate,
+            p_gst: gst,
+            p_total_sale: total,
+            p_total_cogs: estimatedCogs,
+            p_gross_profit: grossProfit,
+            p_sale_date: document.getElementById('sale_date').value || new Date().toISOString().slice(0,10),
+            p_remarks: document.getElementById('sale_remarks').value
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Failed to record sale");
+        }
+
+        document.getElementById('salesForm').reset();
+        await loadDataFromDb();
+        if (CURRENT_USER.role !== 'user') {
+          switchTab('dashboard');
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    };
+
+    // --- 8. SECURE DELETE (ADMINISTRATOR CREDENTIAL VERIFIED) ---
+    window.secureDelete = async function(table, id) {
+      if (!CURRENT_USER || (CURRENT_USER.username !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'admin')) {
+        alert("Access Denied: Record deletion is restricted exclusively to Administrators (admin and malaya).");
+        return;
+      }
+
+      const pass = prompt(`Administrator Authorization Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
+      if (!pass) return;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            target_table: table,
+            record_id: id,
+            calling_username: CURRENT_USER.username,
+            user_password: pass
+          })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          throw new Error(result.message || "Authentication failed or unauthorized action.");
+        }
+
+        loadDataFromDb();
+      } catch (err) {
+        alert("Deletion Blocked: " + err.message);
+      }
+    };
+
+    // --- 9. PASSWORD RESET HELPER ---
+    window.openResetModal = function() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+      document.getElementById('reset-step-1').classList.remove('hidden');
+      document.getElementById('reset-step-2').classList.add('hidden');
+      document.getElementById('reset-err').classList.add('hidden');
+      document.getElementById('reset-succ').classList.add('hidden');
+      document.getElementById('reset-step-1').reset();
+      document.getElementById('reset-step-2').reset();
+      RESET_STATE.username = null;
+    };
+
+    window.closeResetModal = function() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    };
+
+    window.lookupSecurityQuestion = async function(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('rst_username').value.trim().toLowerCase();
+      const errBox = document.getElementById('reset-err');
+      const btn = document.getElementById('btn-lookup-user');
+
+      errBox.classList.add('hidden');
+
+      if (usernameInput === 'admin') {
+        errBox.textContent = "Access Denied: Root Admin credentials cannot be reset via public recovery.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Finding Profile...`;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=username,sec_question`, {
+          headers: getHeaders()
+        });
+        const users = await res.json();
+
+        if (!users || users.length === 0) {
+          throw new Error("Username not found in system directory.");
+        }
+
+        RESET_STATE.username = users[0].username;
+        document.getElementById('disp-sec-question').textContent = users[0].sec_question || "What was the name of your first school?";
+        document.getElementById('reset-step-1').classList.add('hidden');
+        document.getElementById('reset-step-2').classList.remove('hidden');
+      } catch (err) {
+        errBox.textContent = err.message || "Failed to process request.";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `Continue`;
+      }
+    };
+
+    window.verifyAnswerAndChangePassword = async function(e) {
+      e.preventDefault();
+      const enteredAnswer = document.getElementById('rst_answer').value.trim();
+      const newPass = document.getElementById('rst_newpass').value.trim();
+      const confPass = document.getElementById('rst_confpass').value.trim();
+      const errBox = document.getElementById('reset-err');
+      const succBox = document.getElementById('reset-succ');
+      const btn = document.getElementById('btn-sub-reset');
+
+      errBox.classList.add('hidden');
+      succBox.classList.add('hidden');
+
+      if (newPass.length < 6) {
+        errBox.textContent = "New password must be at least 6 characters.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (newPass !== confPass) {
+        errBox.textContent = "Passwords do not match.";
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Updating Password...`;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/reset_password_with_security_qa`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_username: RESET_STATE.username,
+            p_answer: enteredAnswer,
+            p_new_password: newPass
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || "Incorrect answer or verification failed.");
+        }
+
+        succBox.textContent = "Password updated successfully! Redirecting to sign in...";
+        succBox.classList.remove('hidden');
+
+        setTimeout(() => {
+          closeResetModal();
+          document.getElementById('login_username').value = RESET_STATE.username;
+          document.getElementById('login_password').value = "";
+        }, 1800);
+      } catch (err) {
+        errBox.textContent = err.message || "Error updating password.";
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.innerHTML = `Verify & Save New Password`;
+      }
+    };
+
+    // --- 10. NAVIGATION & TAB SWITCHING ---
+    window.switchTab = function(tabId) {
+      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
+      tabs.forEach(t => {
+        const sec = document.getElementById('sec-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (sec) {
+          sec.classList.remove('block');
+          sec.classList.add('hidden');
+        }
+        if (btn) {
+          btn.classList.remove('tab-active');
+          btn.classList.remove('text-slate-700');
+          btn.classList.add('text-slate-500');
+        }
+      });
+
+      const activeSec = document.getElementById('sec-' + tabId);
+      const activeBtn = document.getElementById('tab-' + tabId);
+      if (activeSec) {
+        activeSec.classList.remove('hidden');
+        activeSec.classList.add('block');
+      }
+      if (activeBtn) {
+        activeBtn.classList.add('tab-active');
+        activeBtn.classList.add('text-slate-700');
+        activeBtn.classList.remove('text-slate-500');
+      }
+
+      if (tabId === 'reports') generateReport();
+      if (tabId === 'audit-logs') renderAuditLogs();
+    };
+
+    // --- 11. REPORTS GENERATOR ---
     window.generateReport = function() {
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
@@ -1736,164 +2005,6 @@
               <p class="text-[10px] text-emerald-600 font-semibold">Margin: ${totalSal > 0 ? ((grossProf/totalSal)*100).toFixed(1) : 0}%</p>
             </div>
           </div>
-
-          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Sales Activity Ledger</h3>
-          <table class="w-full text-xs text-left mb-6 border">
-            <thead class="bg-slate-100 font-bold">
-              <tr>
-                <th class="p-2 border">Date</th>
-                <th class="p-2 border">Customer</th>
-                <th class="p-2 border">Product</th>
-                <th class="p-2 border text-center">Qty</th>
-                <th class="p-2 border text-right">Sale Amount</th>
-                <th class="p-2 border text-right">Profit</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredSales.map(s => `
-                <tr>
-                  <td class="p-2 border">${s.sale_date || '-'}</td>
-                  <td class="p-2 border font-medium">${s.customer}</td>
-                  <td class="p-2 border">${s.name}</td>
-                  <td class="p-2 border text-center">${s.qty}</td>
-                  <td class="p-2 border text-right font-bold">₹${Number(s.total_sale).toLocaleString()}</td>
-                  <td class="p-2 border text-right text-emerald-700 font-bold">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } else if (type === 'sales') {
-        html += `
-          <table class="w-full text-xs text-left border">
-            <thead class="bg-slate-100 font-bold">
-              <tr>
-                <th class="p-2 border">Date</th>
-                <th class="p-2 border">Customer</th>
-                <th class="p-2 border">Code</th>
-                <th class="p-2 border">Product Name</th>
-                <th class="p-2 border text-center">Qty</th>
-                <th class="p-2 border text-right">Rate</th>
-                <th class="p-2 border text-right">GST %</th>
-                <th class="p-2 border text-right">Total Sale</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredSales.map(s => `
-                <tr>
-                  <td class="p-2 border">${s.sale_date || '-'}</td>
-                  <td class="p-2 border font-semibold">${s.customer}</td>
-                  <td class="p-2 border font-mono">${s.product_code}</td>
-                  <td class="p-2 border">${s.name}</td>
-                  <td class="p-2 border text-center">${s.qty}</td>
-                  <td class="p-2 border text-right">₹${Number(s.selling_rate).toFixed(2)}</td>
-                  <td class="p-2 border text-right">${s.gst}%</td>
-                  <td class="p-2 border text-right font-bold">₹${Number(s.total_sale).toLocaleString()}</td>
-                </tr>
-              `).join('')}
-              <tr class="bg-slate-100 font-bold text-slate-900">
-                <td colspan="7" class="p-2 border text-right">GRAND TOTAL SALES:</td>
-                <td class="p-2 border text-right text-emerald-700">₹ ${totalSal.toLocaleString()}</td>
-              </tr>
-            </tbody>
-          </table>
-        `;
-      } else if (type === 'purchase') {
-        html += `
-          <table class="w-full text-xs text-left border">
-            <thead class="bg-slate-100 font-bold">
-              <tr>
-                <th class="p-2 border">Date</th>
-                <th class="p-2 border">Supplier</th>
-                <th class="p-2 border">RM Code</th>
-                <th class="p-2 border">Material Name</th>
-                <th class="p-2 border text-center">Qty</th>
-                <th class="p-2 border text-right">Unit Rate</th>
-                <th class="p-2 border text-right">GST %</th>
-                <th class="p-2 border text-right">Total Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredPurchases.map(p => `
-                <tr>
-                  <td class="p-2 border">${p.pdate || '-'}</td>
-                  <td class="p-2 border font-medium">${p.supplier}</td>
-                  <td class="p-2 border font-mono">${p.rm_code}</td>
-                  <td class="p-2 border">${p.name}</td>
-                  <td class="p-2 border text-center">${p.qty} ${p.unit}</td>
-                  <td class="p-2 border text-right">₹${Number(p.rate).toFixed(2)}</td>
-                  <td class="p-2 border text-right">${p.gst}%</td>
-                  <td class="p-2 border text-right font-bold">₹${Number(p.total).toLocaleString()}</td>
-                </tr>
-              `).join('')}
-              <tr class="bg-slate-100 font-bold text-slate-900">
-                <td colspan="7" class="p-2 border text-right">GRAND TOTAL PURCHASES:</td>
-                <td class="p-2 border text-right text-emerald-700">₹ ${totalPur.toLocaleString()}</td>
-              </tr>
-            </tbody>
-          </table>
-        `;
-      } else if (type === 'inventory') {
-        html += `
-          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Raw Materials Live Balance</h3>
-          <table class="w-full text-xs text-left border mb-6">
-            <thead class="bg-slate-100 font-bold">
-              <tr>
-                <th class="p-2 border">RM Code</th>
-                <th class="p-2 border">Name</th>
-                <th class="p-2 border text-center">Unit</th>
-                <th class="p-2 border text-center">Live Stock</th>
-                <th class="p-2 border text-right">Unit Cost</th>
-                <th class="p-2 border text-right">Total Valuation</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${DB.rawMaterials.map(rm => {
-                const stock = getRmStock(rm.code, rm.opening);
-                const val = stock * Number(rm.rate || 0);
-                return `
-                  <tr>
-                    <td class="p-2 border font-mono font-bold">${rm.code}</td>
-                    <td class="p-2 border">${rm.name}</td>
-                    <td class="p-2 border text-center">${rm.unit}</td>
-                    <td class="p-2 border text-center font-bold">${stock}</td>
-                    <td class="p-2 border text-right">₹${Number(rm.rate).toFixed(2)}</td>
-                    <td class="p-2 border text-right font-bold">₹${val.toLocaleString()}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-
-          <h3 class="font-bold text-sm text-slate-800 mb-2 uppercase">Finished Goods Live Balance</h3>
-          <table class="w-full text-xs text-left border">
-            <thead class="bg-slate-100 font-bold">
-              <tr>
-                <th class="p-2 border">Product Code</th>
-                <th class="p-2 border">Product Name</th>
-                <th class="p-2 border text-center">Unit</th>
-                <th class="p-2 border text-center font-bold">${stock}</th>
-                <th class="p-2 border text-right">Selling Price</th>
-                <th class="p-2 border text-right">Total Valuation</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${DB.products.map(prd => {
-                const stock = getProductStock(prd.code, prd.opening);
-                const val = stock * Number(prd.rate || 0);
-                return `
-                  <tr>
-                    <td class="p-2 border font-mono font-bold text-emerald-800">${prd.code}</td>
-                    <td class="p-2 border">${prd.name}</td>
-                    <td class="p-2 border text-center">${prd.unit}</td>
-                    <td class="p-2 border text-center font-bold">${stock}</td>
-                    <td class="p-2 border text-right">₹${Number(prd.rate).toFixed(2)}</td>
-                    <td class="p-2 border text-right font-bold">₹${val.toLocaleString()}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
         `;
       }
 
@@ -1907,304 +2018,6 @@
       canvas.innerHTML = html;
     };
 
-    function renderAll() {
-      renderDashboard();
-      renderRawMaterials();
-      renderPurchases();
-      renderProducts();
-      renderSales();
-      renderUsers();
-      renderAuditLogs();
-    }
-
-    // --- 11. FORM HANDLERS & DB ACTIONS ---
-    window.saveUserAccount = async function(e) {
-      e.preventDefault();
-      const username = document.getElementById('usr_username').value.trim().toLowerCase();
-      const password = document.getElementById('usr_password').value.trim();
-      const full_name = document.getElementById('usr_fullname').value.trim();
-      const phone = document.getElementById('usr_phone').value.trim();
-      const sec_question = document.getElementById('usr_sec_question').value;
-      const sec_answer = document.getElementById('usr_sec_answer').value.trim();
-      const role = document.getElementById('usr_role').value;
-
-      if (password.length < 6) {
-        alert("Password must be at least 6 characters long.");
-        return;
-      }
-
-      if (username === 'admin' || username === 'malaya') {
-        alert("Action Prohibited: Root Administrator accounts cannot be created or overwritten.");
-        return;
-      }
-
-      const newUser = { username, password, full_name, phone, sec_question, sec_answer: sec_answer.toLowerCase(), role };
-
-      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(newUser)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert("Error creating user account: " + (err.message || JSON.stringify(err)));
-        return;
-      }
-
-      await pushAuditLog("User Management", "CREATE", username, `Created account for ${full_name} with role: ${role}`);
-      alert(`Account created successfully for ${full_name}!`);
-      document.getElementById('userForm').reset();
-      loadDataFromDb();
-    };
-
-    window.saveRawMaterial = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('rm_code').value.trim().toUpperCase();
-      const name = document.getElementById('rm_name').value.trim();
-      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
-
-      const newRM = {
-        code,
-        category: document.getElementById('rm_category').value,
-        unit: document.getElementById('rm_unit').value,
-        supplier: document.getElementById('rm_supplier').value,
-        name,
-        rate: parseFloat(document.getElementById('rm_rate').value) || 0,
-        gst: parseFloat(document.getElementById('rm_gst').value) || 0,
-        opening: parseFloat(document.getElementById('rm_opening').value) || 0,
-        reorder: parseFloat(document.getElementById('rm_reorder').value) || 0,
-        location: document.getElementById('rm_location').value,
-        batch: document.getElementById('rm_batch').value,
-        pdate: document.getElementById('rm_pdate').value || null,
-        edate: document.getElementById('rm_edate').value || null,
-        created_by: creator
-      };
-
-      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/raw_materials`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(newRM)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert("Error saving: " + (err.message || JSON.stringify(err)));
-        return;
-      }
-
-      await pushAuditLog("Raw Materials", "CREATE", code, `Added Raw Material: ${name}`);
-      document.getElementById('rmForm').reset();
-      loadDataFromDb();
-    };
-
-    window.autoFillRmPurchase = function() {
-      const code = document.getElementById('pur_rm_code').value;
-      const rm = DB.rawMaterials.find(r => r.code === code);
-      if (rm) {
-        document.getElementById('pur_rm_name').value = rm.name;
-        document.getElementById('pur_supplier').value = rm.supplier || '';
-        document.getElementById('pur_unit').value = rm.unit;
-        document.getElementById('pur_rate').value = rm.rate;
-        document.getElementById('pur_gst').value = rm.gst;
-        calcPurTotal();
-      }
-    };
-
-    window.calcPurTotal = function() {
-      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      document.getElementById('pur_total').value = '₹ ' + total.toFixed(2);
-    };
-
-    window.savePurchase = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('pur_rm_code').value;
-      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
-
-      const newPurchase = {
-        supplier: document.getElementById('pur_supplier').value,
-        rm_code: code,
-        name: document.getElementById('pur_rm_name').value,
-        qty,
-        unit: document.getElementById('pur_unit').value,
-        rate,
-        gst,
-        total,
-        batch: document.getElementById('pur_batch').value,
-        pdate: document.getElementById('pur_pdate').value || null,
-        edate: document.getElementById('pur_edate').value || null,
-        remarks: document.getElementById('pur_remarks').value,
-        created_by: creator
-      };
-
-      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/purchases`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(newPurchase)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert("Error logging purchase: " + (err.message || JSON.stringify(err)));
-        return;
-      }
-
-      await pushAuditLog("Purchases", "CREATE", code, `Logged inward purchase: ${qty} units (₹${total.toFixed(2)})`);
-      document.getElementById('purchaseForm').reset();
-      loadDataFromDb();
-    };
-
-    window.saveProduct = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('prd_code').value.trim().toUpperCase();
-      const name = document.getElementById('prd_name').value.trim();
-      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
-
-      const newProduct = {
-        code,
-        category: document.getElementById('prd_category').value,
-        unit: document.getElementById('prd_unit').value,
-        name,
-        rate: parseFloat(document.getElementById('prd_rate').value) || 0,
-        gst: parseFloat(document.getElementById('prd_gst').value) || 0,
-        opening: parseFloat(document.getElementById('prd_opening').value) || 0,
-        reorder: parseFloat(document.getElementById('prd_reorder').value) || 0,
-        location: document.getElementById('prd_location').value,
-        created_by: creator
-      };
-
-      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/products`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(newProduct)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert("Error saving product: " + (err.message || JSON.stringify(err)));
-        return;
-      }
-
-      await pushAuditLog("Products", "CREATE", code, `Created Finished Product: ${name}`);
-      document.getElementById('prodForm').reset();
-      loadDataFromDb();
-    };
-
-    window.autoFillProductSale = function() {
-      const code = document.getElementById('sale_prd_code').value;
-      const prd = DB.products.find(p => p.code === code);
-      if (prd) {
-        document.getElementById('sale_prd_name').value = prd.name;
-        document.getElementById('sale_unit').value = prd.unit;
-        document.getElementById('sale_rate').value = prd.rate;
-        document.getElementById('sale_gst').value = prd.gst;
-        calcSaleTotal();
-      }
-    };
-
-    window.calcSaleTotal = function() {
-      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      document.getElementById('sale_total').value = '₹ ' + total.toFixed(2);
-    };
-
-    window.saveSale = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('sale_prd_code').value;
-      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
-      const customer = document.getElementById('sale_customer').value.trim();
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      const creator = CURRENT_USER ? CURRENT_USER.fullName : 'Admin';
-      
-      const estimatedCogs = subtotal * 0.60;
-      const grossProfit = subtotal - estimatedCogs;
-
-      const newSale = {
-        customer,
-        product_code: code,
-        name: document.getElementById('sale_prd_name').value,
-        qty,
-        unit: document.getElementById('sale_unit').value,
-        selling_rate: rate,
-        gst,
-        total_sale: total,
-        total_cogs: estimatedCogs,
-        gross_profit: grossProfit,
-        sale_date: document.getElementById('sale_date').value || new Date().toISOString().slice(0,10),
-        remarks: document.getElementById('sale_remarks').value,
-        created_by: creator
-      };
-
-      const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/sales`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(newSale)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert("Error recording sale: " + (err.message || JSON.stringify(err)));
-        return;
-      }
-
-      await pushAuditLog("Sales", "CREATE", code, `Generated invoice for ${customer}: ${qty} pcs (₹${total.toFixed(2)})`);
-      document.getElementById('salesForm').reset();
-      loadDataFromDb();
-      if (CURRENT_USER.role !== 'user') {
-        switchTab('dashboard');
-      }
-    };
-
-    // --- 12. DYNAMIC CREDENTIAL-BASED DELETIONS (ADMINISTRATORS ONLY) ---
-    window.secureDelete = async function(table, id) {
-      if (!CURRENT_USER || (CURRENT_USER.username !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'admin')) {
-        alert("Access Denied: Record deletion is restricted exclusively to Administrators (admin and malaya).");
-        return;
-      }
-
-      const pass = prompt(`Administrator Authorization Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
-      if (!pass) return;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            target_table: table,
-            record_id: id,
-            calling_username: CURRENT_USER.username,
-            user_password: pass
-          })
-        });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-          throw new Error(result.message || "Authentication failed or unauthorized action.");
-        }
-
-        await pushAuditLog(table, "DELETE", id, `Deleted record from ${table} (Authorized by ${CURRENT_USER.username})`);
-        loadDataFromDb();
-      } catch (err) {
-        alert("Deletion Blocked: " + err.message);
-      }
-    };
-
     // Auto-load on startup
     window.addEventListener('DOMContentLoaded', () => {
       const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME');
@@ -2213,7 +2026,7 @@
       }
       document.getElementById('login_password').value = '';
       applyUserSession();
-      if (CURRENT_USER) loadDataFromDb();
+      if (SESSION_TOKEN) loadDataFromDb();
     });
   </script>
 </body>
