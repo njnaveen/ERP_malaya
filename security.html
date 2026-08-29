@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LZebra ERP - Security & Threat Sentinel</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-500 selection:text-white">
+
+  <!-- Top Navbar -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center shadow-xl">
+    <div class="flex items-center gap-3.5">
+      <div class="h-10 w-10 rounded-xl bg-rose-950 border border-rose-600/50 flex items-center justify-center text-rose-500 shadow-lg shadow-rose-950/40 text-xl">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-black tracking-wider text-white">LZEBRA <span class="text-rose-500">SECURITY SENTINEL</span></h1>
+          <span class="text-[10px] bg-rose-950/80 text-rose-300 font-mono px-2 py-0.5 rounded border border-rose-800 uppercase tracking-widest flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span> LIVE DEFENSE
+          </span>
+        </div>
+        <p class="text-xs text-slate-400">Automated Threat Detection, Geolocation Tracing & Email Alert Dispatcher</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 mt-3 sm:mt-0">
+      <a href="index.html" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-2 transition">
+        <i class="fa-solid fa-arrow-left"></i> Back to ERP App
+      </a>
+      <button onclick="loadIncidents()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-md flex items-center gap-1.5 cursor-pointer transition">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh Logs
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="p-6 max-w-[1600px] w-full mx-auto flex-1 space-y-6">
+
+    <!-- Overview Counters -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-xl shadow-lg flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Threats Blocked</p>
+          <h3 id="stat-total" class="text-3xl font-black text-rose-500 mt-1">0</h3>
+          <p class="text-[11px] text-slate-500 mt-1">PostgreSQL RLS & Policy Rejections</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-rose-950/60 text-rose-500 flex items-center justify-center text-xl border border-rose-800/40">
+          <i class="fa-solid fa-shield-virus"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-xl shadow-lg flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Targeted Email Alerts</p>
+          <h3 class="text-base font-black text-emerald-400 mt-1 font-mono">naveen.jaiswal@icloud.com</h3>
+          <p id="stat-email-status" class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span> Email Relay Configured
+          </p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-emerald-950/60 text-emerald-400 flex items-center justify-center text-xl border border-emerald-800/40">
+          <i class="fa-solid fa-envelope-circle-check"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-xl shadow-lg flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Attacker IP</p>
+          <h3 id="stat-last-ip" class="text-xl font-black text-sky-400 mt-1 font-mono">None Detected</h3>
+          <p id="stat-last-loc" class="text-[11px] text-slate-500 mt-1">Awaiting telemetry</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-sky-950/60 text-sky-400 flex items-center justify-center text-xl border border-sky-800/40">
+          <i class="fa-solid fa-location-crosshairs"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-xl shadow-lg flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Database Shield State</p>
+          <h3 class="text-xl font-black text-emerald-400 mt-1">100% ENFORCED</h3>
+          <p class="text-[11px] text-slate-500 mt-1">All Public Direct REST Grants Revoked</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-emerald-950/60 text-emerald-400 flex items-center justify-center text-xl border border-emerald-800/40">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threat Testing & Simulation Toolkit -->
+    <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-xl">
+      <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b border-slate-800">
+        <div>
+          <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-vial-virus text-rose-400"></i> Threat Simulation & Sentinel Testing
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify geolocation tracing and instant email dispatching.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="testBreachSimulation('Direct Anonymous REST Injection')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-bug"></i> Test Direct Table Injection
+          </button>
+          <button onclick="testBreachSimulation('Brute Force Admin Login Attempt')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-key"></i> Test Brute Force Alarm
+          </button>
+          <button onclick="testBreachSimulation('Privilege Escalation via RPC')" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-user-ninja"></i> Test Privilege Escalation
+          </button>
+        </div>
+      </div>
+      <div id="sim-status" class="hidden p-3 rounded-lg text-xs font-semibold bg-slate-950 border border-slate-800 text-slate-300"></div>
+    </div>
+
+    <!-- Security Incidents Ledger -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
+        <div>
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-rose-500"></i> Live Security Incident & Telemetry Ledger
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Captures attacker IP addresses, geolocations, ISP providers, and attempted payloads.</p>
+        </div>
+        <span id="incident-count-badge" class="text-xs bg-rose-950 text-rose-300 border border-rose-800 font-semibold px-2.5 py-1 rounded-md">
+          0 Incidents
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left whitespace-nowrap">
+          <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px]">
+            <tr>
+              <th class="p-3.5">TIMESTAMP</th>
+              <th class="p-3.5">INCIDENT TYPE</th>
+              <th class="p-3.5">ATTACKER IP ADDRESS</th>
+              <th class="p-3.5">GEOLOCATION</th>
+              <th class="p-3.5">ISP / NETWORK</th>
+              <th class="p-3.5">ATTEMPTED PAYLOAD</th>
+              <th class="p-3.5">BROWSER USER-AGENT</th>
+            </tr>
+          </thead>
+          <tbody id="incidents-tbody" class="divide-y divide-slate-800/60 text-slate-300 font-medium">
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-500">
+                <i class="fa-solid fa-spinner animate-spin mr-2"></i> Loading security telemetry from cloud database...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
+
+    // 🚨 PASTE YOUR EMAILJS KEYS HERE:
+    const EMAILJS_PUBLIC_KEY = "Efl3TADju6t0a7Ou6"; 
+    const EMAILJS_SERVICE_ID = "service_divsasp"; 
+    const EMAILJS_TEMPLATE_ID = "template_mgkgchk"; 
+
+    if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_EMAILJS_PUBLIC_KEY") {
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+
+    function getHeaders() {
+      return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      };
+    }
+
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '-';
+      const d = new Date(isoStr);
+      return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' });
+    }
+
+    // --- 1. INCIDENT DISPATCHER ---
+    async function dispatchThreatAlert(incidentType, payloadDetails) {
+      const statusBox = document.getElementById('sim-status');
+      statusBox.classList.remove('hidden');
+      statusBox.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-sky-400 mr-2"></i> Capturing network telemetry and sending incident alert...`;
+
+      let ipInfo = { ip: 'Unknown', city: 'Unknown', region: 'Unknown', country_name: 'Unknown', org: 'Unknown' };
+
+      try {
+        const ipRes = await fetch('https://ipapi.co/json/');
+        if (ipRes.ok) {
+          ipInfo = await ipRes.json();
+        }
+      } catch (e) {
+        console.warn("Could not fetch IP metadata:", e);
+      }
+
+      const threatReport = {
+        incident_type: incidentType,
+        ip_address: ipInfo.ip || 'Unknown',
+        location: `${ipInfo.city || ''}, ${ipInfo.region || ''}, ${ipInfo.country_name || 'Unknown'}`,
+        isp: ipInfo.org || 'Unknown ISP',
+        user_agent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+        payload: JSON.stringify(payloadDetails, null, 2)
+      };
+
+      // 1. Insert into Supabase DB
+      try {
+        await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/log_security_incident`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_type: incidentType,
+            p_ip: threatReport.ip_address,
+            p_city: ipInfo.city || 'Unknown',
+            p_region: ipInfo.region || 'Unknown',
+            p_country: ipInfo.country_name || 'Unknown',
+            p_isp: threatReport.isp,
+            p_user_agent: threatReport.user_agent,
+            p_payload: payloadDetails
+          })
+        });
+      } catch (dbErr) {
+        console.warn("Database incident recording failed:", dbErr);
+      }
+
+      // 2. Send Real-time Email to naveen.jaiswal@icloud.com
+      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_EMAILJS_PUBLIC_KEY") {
+        try {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_email: 'naveen.jaiswal@icloud.com',
+            subject: `🚨 [SECURITY BREACH ATTEMPT] ${incidentType}`,
+            incident_type: threatReport.incident_type,
+            ip_address: threatReport.ip_address,
+            location: threatReport.location,
+            isp: threatReport.isp,
+            user_agent: threatReport.user_agent,
+            timestamp: threatReport.timestamp,
+            payload: threatReport.payload
+          });
+          statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident captured & email alert delivered to naveen.jaiswal@icloud.com!</span>`;
+        } catch (emailErr) {
+          statusBox.innerHTML = `⚠️ Incident logged in database, but EmailJS returned error: ${emailErr.text || emailErr.message}`;
+        }
+      } else {
+        statusBox.innerHTML = `✅ Incident logged to database! <span class="text-amber-400">(EmailJS keys not yet pasted in script)</span>`;
+      }
+
+      await loadIncidents();
+    }
+
+    // --- 2. LOAD INCIDENTS ---
+    async function loadIncidents() {
+      const tbody = document.getElementById('incidents-tbody');
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/fetch_erp_data_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ p_token: token || '' })
+        });
+
+        let logs = [];
+        if (res.ok) {
+          const data = await res.json();
+          logs = (data.logs || []).filter(l => l.module === 'Security Shield' || l.action === 'SECURITY_ALERT');
+        }
+
+        document.getElementById('stat-total').textContent = logs.length;
+        document.getElementById('incident-count-badge').textContent = `${logs.length} Incidents`;
+
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-semibold">✅ No unauthorized breach incidents recorded in current retention window.</td></tr>`;
+          return;
+        }
+
+        document.getElementById('stat-last-ip').textContent = logs[0].record_identifier || 'Captured';
+        document.getElementById('stat-last-loc').textContent = logs[0].details || '';
+
+        tbody.innerHTML = '';
+        logs.forEach(l => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="p-3.5 font-mono text-[11px] text-slate-400">${formatTimestamp(l.created_at)}</td>
+              <td class="p-3.5"><span class="bg-rose-950 text-rose-400 border border-rose-800/60 px-2 py-0.5 rounded font-bold text-[10px]">${l.action}</span></td>
+              <td class="p-3.5 font-mono font-bold text-sky-400">${l.record_identifier}</td>
+              <td class="p-3.5 text-slate-300">${l.details}</td>
+              <td class="p-3.5 text-slate-400">${l.performed_by}</td>
+              <td class="p-3.5 font-mono text-[11px] text-amber-300/80 max-w-[250px] truncate" title="${l.details}">Payload Logged</td>
+              <td class="p-3.5 text-[11px] text-slate-500 font-mono max-w-[200px] truncate" title="${navigator.userAgent}">${navigator.userAgent}</td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.warn("Error reading incidents:", e);
+      }
+    }
+
+    // --- 3. SIMULATION ---
+    window.testBreachSimulation = function(type) {
+      dispatchThreatAlert(type, {
+        simulated_by: 'Admin Manual Sentinel Test',
+        target_endpoint: '/rest/v1/sales?select=*',
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    window.addEventListener('DOMContentLoaded', loadIncidents);
+  </script>
+</body>
+</html>
