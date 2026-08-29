@@ -204,7 +204,7 @@
     </div>
   </div>
 
-  <!-- Header with Session Profile Indicator -->
+  <!-- Header -->
   <header class="bg-slate-950 text-white px-6 py-3 flex flex-wrap justify-between items-center shadow-lg border-b border-emerald-900/40 no-print">
     <div class="flex items-center gap-3.5">
       <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-10 w-10 rounded-lg border border-emerald-500/40 object-cover bg-black" />
@@ -218,6 +218,9 @@
     </div>
 
     <div class="flex items-center gap-3 mt-2 sm:mt-0">
+      <a href="security.html" class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-300 text-xs font-semibold rounded flex items-center gap-1.5 border border-rose-800 transition" title="Open Security Sentinel Console">
+        <i class="fa-solid fa-shield-halved text-rose-400"></i> Sentinel
+      </a>
       <span id="db-status" class="text-xs bg-slate-900 px-3 py-1.5 rounded border border-slate-800 flex items-center gap-2">
         <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Initializing...
       </span>
@@ -798,12 +801,13 @@
                 <option value="Products">Product Master</option>
                 <option value="Sales">Sales Register</option>
                 <option value="User Management">User & RBAC Management</option>
+                <option value="Security Shield">Security Shield & Breaches</option>
               </select>
             </div>
 
             <div>
-              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User</label>
-              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search username / name..." class="border p-1.5 rounded text-xs bg-slate-50">
+              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User / Identifier</label>
+              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search..." class="border p-1.5 rounded text-xs bg-slate-50">
             </div>
           </div>
         </div>
@@ -911,7 +915,6 @@
     let SESSION_TOKEN = localStorage.getItem('LZEBRA_SESSION_TOKEN') || null;
     let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_USER')) || null;
     let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [], logs: [] };
-
     let RESET_STATE = { username: null };
 
     function getHeaders() {
@@ -928,7 +931,7 @@
       return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
     }
 
-    // --- 2. AUTHENTICATION & TOKEN HANDLING ---
+    // --- 2. AUTHENTICATION ---
     window.handleLogin = async function(e) {
       e.preventDefault();
       const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
@@ -997,7 +1000,6 @@
       CURRENT_USER = null;
 
       const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME') || '';
-
       document.getElementById('login-modal').classList.remove('hidden');
       document.getElementById('user-display').textContent = "Not Signed In";
       document.getElementById('role-badge').textContent = "GUEST";
@@ -1005,7 +1007,7 @@
       document.getElementById('login_password').value = '';
     };
 
-    // --- 3. ROLE-BASED ACCESS CONTROL (UI LAYER) ---
+    // --- 3. ROLE-BASED ACCESS CONTROL ---
     function applyUserSession() {
       if (!CURRENT_USER || !SESSION_TOKEN) {
         document.getElementById('login-modal').classList.remove('hidden');
@@ -1054,7 +1056,7 @@
       }
     }
 
-    // --- 4. SECURE DATA SYNCHRONIZATION ---
+    // --- 4. DATA SYNC ---
     window.loadDataFromDb = async function() {
       if (!SESSION_TOKEN) return;
       const statusEl = document.getElementById('db-status');
@@ -1097,7 +1099,6 @@
       }
     };
 
-    // --- 5. DATA RENDERING ENGINES ---
     function getRmStock(rmCode, openingStock) {
       const totalPurchased = DB.purchases
         .filter(p => p.rm_code === rmCode)
@@ -1371,7 +1372,7 @@
 
       const filteredLogs = DB.logs.filter(log => {
         const matchesModule = (filterModule === 'ALL' || log.module === filterModule);
-        const matchesUser = (!searchUser || (log.performed_by && log.performed_by.toLowerCase().includes(searchUser)));
+        const matchesUser = (!searchUser || (log.performed_by && log.performed_by.toLowerCase().includes(searchUser)) || (log.record_identifier && log.record_identifier.toLowerCase().includes(searchUser)));
         return matchesModule && matchesUser;
       });
 
@@ -1386,6 +1387,8 @@
           actionBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-plus mr-1"></i>${l.action}</span>`;
         } else if (l.action === 'UPDATE' || l.action === 'PASSWORD_RESET') {
           actionBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-pen mr-1"></i>${l.action}</span>`;
+        } else if (l.action === 'SECURITY_ALERT') {
+          actionBadge = `<span class="bg-rose-600 text-white px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-triangle-exclamation mr-1"></i>THREAT</span>`;
         } else {
           actionBadge = `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-trash mr-1"></i>${l.action}</span>`;
         }
@@ -1448,7 +1451,7 @@
       renderAuditLogs();
     }
 
-    // --- 6. USER MANAGEMENT EDIT & CREATE ---
+    // --- 5. USER EDIT & CREATE ---
     window.openEditModal = function(userId) {
       const user = DB.users.find(u => u.id === userId);
       if (!user) return;
@@ -1564,7 +1567,7 @@
       }
     };
 
-    // --- 7. TRANSACTION INSERTION RPCS ---
+    // --- 6. TRANSACTIONS ---
     window.saveRawMaterial = async function(e) {
       e.preventDefault();
       const code = document.getElementById('rm_code').value.trim().toUpperCase();
@@ -1772,10 +1775,10 @@
       }
     };
 
-    // --- 8. SECURE DELETE (ADMINISTRATOR CREDENTIAL VERIFIED) ---
+    // --- 7. SECURE DELETE ---
     window.secureDelete = async function(table, id) {
       if (!CURRENT_USER || (CURRENT_USER.username !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'admin')) {
-        alert("Access Denied: Record deletion is restricted exclusively to Administrators (admin and malaya).");
+        alert("Access Denied: Record deletion is restricted exclusively to Administrators.");
         return;
       }
 
@@ -1795,7 +1798,6 @@
         });
 
         const result = await res.json();
-
         if (!res.ok) {
           throw new Error(result.message || "Authentication failed or unauthorized action.");
         }
@@ -1806,7 +1808,7 @@
       }
     };
 
-    // --- 9. PASSWORD RESET HELPER ---
+    // --- 8. PASSWORD RESET ---
     window.openResetModal = function() {
       document.getElementById('reset-modal').classList.remove('hidden');
       document.getElementById('reset-step-1').classList.remove('hidden');
@@ -1830,7 +1832,7 @@
 
       errBox.classList.add('hidden');
 
-      if (usernameInput === 'admin') {
+      if (usernameInput === 'admin' || usernameInput === 'malaya') {
         errBox.textContent = "Access Denied: Root Admin credentials cannot be reset via public recovery.";
         errBox.classList.remove('hidden');
         return;
@@ -1918,7 +1920,7 @@
       }
     };
 
-    // --- 10. NAVIGATION & TAB SWITCHING ---
+    // --- 9. TABS & REPORTS ---
     window.switchTab = function(tabId) {
       const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
       tabs.forEach(t => {
@@ -1951,7 +1953,6 @@
       if (tabId === 'audit-logs') renderAuditLogs();
     };
 
-    // --- 11. REPORTS GENERATOR ---
     window.generateReport = function() {
       const type = document.getElementById('report_type').value;
       const year = document.getElementById('report_year').value;
@@ -2018,7 +2019,6 @@
       canvas.innerHTML = html;
     };
 
-    // Auto-load on startup
     window.addEventListener('DOMContentLoaded', () => {
       const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME');
       if (rememberedUser) {
