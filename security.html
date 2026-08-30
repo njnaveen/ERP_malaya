@@ -7,7 +7,6 @@
   <link rel="icon" type="image/png" href="logo.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-500 selection:text-white">
 
@@ -24,7 +23,7 @@
             <span class="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span> 1-CLICK MITIGATION
           </span>
         </div>
-        <p class="text-xs text-slate-400">Automated Threat Detection & 1-Click Instant IP Blacklist Resolution</p>
+        <p class="text-xs text-slate-400">Automated Threat Detection, Geolocation Tracing & Database Defense</p>
       </div>
     </div>
 
@@ -97,7 +96,7 @@
           <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
             <i class="fa-solid fa-vial-virus text-rose-400"></i> Threat Simulation & Sentinel Testing
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify geolocation tracing and 1-click blocking actions.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify telemetry logging, email dispatches, and 1-click mitigation.</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button onclick="testBreachSimulation('Direct Anonymous REST Injection')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
@@ -135,7 +134,7 @@
               <th class="p-3.5">TIMESTAMP</th>
               <th class="p-3.5">INCIDENT TYPE</th>
               <th class="p-3.5">ATTACKER IP ADDRESS</th>
-              <th class="p-3.5">GEOLOCATION / ISP</th>
+              <th class="p-3.5">GEOLOCATION / ORIGIN</th>
               <th class="p-3.5">ATTEMPTED DETAILS</th>
               <th class="p-3.5 text-center">1-CLICK MITIGATION</th>
             </tr>
@@ -247,6 +246,14 @@
           const attackerIp = l.record_identifier;
           const cleanReason = (l.details || 'Breach attempt').replace(/'/g, "\\'");
 
+          // Robust Geolocation extraction from details string
+          let locationStr = 'Direct API Origin';
+          if (l.details && l.details.includes('from ')) {
+            locationStr = l.details.split('from ')[1].trim();
+          } else if (l.performed_by && l.performed_by !== 'Security Sentinel') {
+            locationStr = l.performed_by;
+          }
+
           tbody.innerHTML += `
             <tr class="hover:bg-slate-800/40 transition">
               <td class="p-3.5 font-mono text-[11px] text-slate-400">${formatTimestamp(l.created_at)}</td>
@@ -257,7 +264,7 @@
                 }
               </td>
               <td class="p-3.5 font-mono font-bold ${isBanned ? 'text-amber-400' : 'text-sky-400'}">${attackerIp}</td>
-              <td class="p-3.5 text-slate-300">${l.performed_by || 'Unknown Origin'}</td>
+              <td class="p-3.5 text-slate-300 font-medium">${locationStr}</td>
               <td class="p-3.5 text-slate-400 max-w-[320px] truncate" title="${l.details}">${l.details}</td>
               <td class="p-3.5 text-center">
                 ${!isBanned && attackerIp !== 'UNKNOWN_IP' ? `
@@ -304,7 +311,7 @@
           })
         });
 
-        statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! You can now test the 1-Click "Block IP" button below.</span>`;
+        statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! The 1-Click "Block IP" button is now active below.</span>`;
         loadIncidents();
       } catch (err) {
         statusBox.innerHTML = `❌ Simulation error: ${err.message}`;
