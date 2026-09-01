@@ -3,78 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Security Sentinel — Threat Telemetry</title>
+  <title>Security Sentinel — Threat Telemetry Ledger</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     body {
-      background-color: #060913;
+      background-color: #060911;
       color: #94a3b8;
-      padding: 32px 24px;
+      padding: 24px;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: flex-start;
     }
 
-    .sentinel-card {
+    .ledger-container {
       background-color: #0b1120;
-      border: 1px solid #17233f;
+      border: 1px solid #162035;
       border-radius: 12px;
       width: 100%;
-      max-width: 1380px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      max-width: 1540px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
       overflow: hidden;
     }
 
-    /* Header Bar */
-    .card-header {
-      padding: 24px 28px 18px 28px;
+    /* Header Section */
+    .ledger-header {
+      padding: 22px 28px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 1px solid #141f36;
+      align-items: center;
+      border-bottom: 1px solid #141e33;
     }
 
-    .header-left h2 {
+    .header-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .header-title {
       color: #ffffff;
       font-size: 18px;
       font-weight: 700;
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 6px;
     }
 
-    .header-left h2 svg {
-      fill: #f43f5e;
-      width: 20px;
-      height: 20px;
+    .header-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #f43f5e;
     }
 
-    .header-left p {
+    .header-subtitle {
       font-size: 13px;
       color: #64748b;
     }
 
-    .event-badge {
-      background-color: rgba(225, 29, 72, 0.15);
-      border: 1px solid rgba(225, 29, 72, 0.4);
+    .event-counter {
+      background: rgba(225, 29, 72, 0.12);
+      border: 1px solid rgba(225, 29, 72, 0.35);
       color: #fb7185;
       font-size: 12px;
       font-weight: 700;
       padding: 6px 14px;
-      border-radius: 20px;
-      white-space: nowrap;
+      border-radius: 8px;
+      letter-spacing: 0.02em;
     }
 
-    /* Table Layout */
-    .table-container {
+    /* Table Structure */
+    .table-wrapper {
       width: 100%;
       overflow-x: auto;
     }
@@ -87,18 +93,19 @@
     }
 
     thead th {
-      color: #475569;
+      color: #526585;
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      padding: 16px 24px;
-      border-bottom: 1px solid #141f36;
-      background-color: #080d1a;
+      padding: 16px 20px;
+      border-bottom: 1px solid #141e33;
+      background-color: #080d19;
+      white-space: nowrap;
     }
 
     tbody tr {
-      border-bottom: 1px solid #10192d;
+      border-bottom: 1px solid #101828;
       transition: background-color 0.15s ease;
     }
 
@@ -107,69 +114,70 @@
     }
 
     tbody td {
-      padding: 16px 24px;
+      padding: 16px 20px;
       vertical-align: middle;
       color: #cbd5e1;
     }
 
-    .timestamp-cell {
+    /* Column Specific Styles */
+    .col-timestamp {
       color: #94a3b8;
       font-size: 12.5px;
       white-space: nowrap;
     }
 
-    .ip-cell {
+    .col-ip {
       color: #38bdf8;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .col-geo {
+      color: #f1f5f9;
       font-weight: 600;
       white-space: nowrap;
     }
 
-    .geo-cell {
-      color: #cbd5e1;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .details-cell {
+    .col-details {
       color: #94a3b8;
-      max-width: 320px;
+      max-width: 380px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Incident Type Badges */
-    .badge-incident {
+    /* Incident Badges */
+    .badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
       font-size: 11px;
       font-weight: 800;
-      padding: 4px 10px;
+      padding: 4px 9px;
       border-radius: 6px;
+      letter-spacing: 0.04em;
       white-space: nowrap;
-      letter-spacing: 0.03em;
     }
 
     .badge-threat {
-      background: rgba(225, 29, 72, 0.16);
-      color: #fb7185;
+      background: rgba(225, 29, 72, 0.14);
+      color: #f43f5e;
       border: 1px solid rgba(225, 29, 72, 0.35);
     }
 
     .badge-banned {
-      background: rgba(245, 158, 11, 0.14);
+      background: rgba(245, 158, 11, 0.12);
       color: #fbbf24;
       border: 1px solid rgba(245, 158, 11, 0.35);
     }
 
-    /* Data Impact Status Badges */
+    /* Impact Status Badges */
     .impact-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
+      font-size: 11.5px;
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 6px;
@@ -189,12 +197,12 @@
     }
 
     .impact-zero {
-      background: rgba(100, 116, 139, 0.14);
-      color: #94a3b8;
-      border: 1px solid rgba(100, 116, 139, 0.35);
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    /* Action Buttons & Text */
+    /* 1-Click Action Buttons */
     .btn-block {
       background-color: #e11d48;
       color: #ffffff;
@@ -207,7 +215,8 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: background-color 0.2s, transform 0.1s;
+      white-space: nowrap;
+      transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
     .btn-block:hover {
@@ -222,26 +231,29 @@
       color: #475569;
       font-weight: 600;
       font-size: 13px;
+      white-space: nowrap;
     }
   </style>
 </head>
 <body>
 
-  <div class="sentinel-card">
-    <div class="card-header">
-      <div class="header-left">
-        <h2>
-          <svg viewBox="0 0 24 24">
-            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
-          </svg>
-          Live Threat Telemetry & 1-Click Resolution Ledger
-        </h2>
-        <p>Click the action buttons on any row to instantly ban the attacker's IP.</p>
+  <div class="ledger-container">
+    <div class="ledger-header">
+      <div class="header-title-group">
+        <div class="header-title">
+          <span class="header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+            </svg>
+          </span>
+          Live Threat Telemetry &amp; 1-Click Resolution Ledger
+        </div>
+        <div class="header-subtitle">Click the action buttons on any row to instantly ban the attacker's IP.</div>
       </div>
-      <div class="event-badge" id="eventCounter">5 Total Events</div>
+      <div class="event-counter" id="eventCounter">12 Total Events</div>
     </div>
 
-    <div class="table-container">
+    <div class="table-wrapper">
       <table>
         <thead>
           <tr>
@@ -255,57 +267,57 @@
           </tr>
         </thead>
         <tbody id="telemetryBody">
-          <!-- Row 1 -->
+          <!-- Event 1 -->
           <tr data-ip="203.0.113.195">
-            <td class="timestamp-cell">30/08/26, 9:23:28 pm</td>
-            <td><span class="badge-incident badge-threat">⚠ THREAT</span></td>
-            <td class="ip-cell">203.0.113.195</td>
-            <td class="geo-cell">Tokyo, Japan</td>
-            <td class="details-cell" title="Unauthorized breach attempt: Direct Database Verification Payload Injection">Unauthorized breach attempt: Direct Database Verification Payload Injection</td>
+            <td class="col-timestamp">30/08/26, 9:23:28 pm</td>
+            <td><span class="badge badge-threat">⚠ THREAT</span></td>
+            <td class="col-ip">203.0.113.195</td>
+            <td class="col-geo">Tokyo, Japan</td>
+            <td class="col-details" title="Unauthorized breach attempt: Direct Database Verification Payload Injection">Unauthorized breach attempt: Direct Database Verificat...</td>
             <td><span class="impact-badge impact-restricted">🛡 Restricted (0 Exposed)</span></td>
             <td><button class="btn-block" onclick="mitigateThreat(this, '203.0.113.195')">⊘ Block IP</button></td>
           </tr>
 
-          <!-- Row 2 -->
+          <!-- Event 2 -->
           <tr data-ip="223.233.82.60">
-            <td class="timestamp-cell">30/08/26, 1:39:38 pm</td>
-            <td><span class="badge-incident badge-threat">⚠ THREAT</span></td>
-            <td class="ip-cell">223.233.82.60</td>
-            <td class="geo-cell">Nashik, India</td>
-            <td class="details-cell" title="Unauthorized breach attempt: Brute Force Password Spraying on Admin DB">Unauthorized breach attempt: Brute Force Password Spraying on Admin DB</td>
+            <td class="col-timestamp">30/08/26, 1:39:38 pm</td>
+            <td><span class="badge badge-threat">⚠ THREAT</span></td>
+            <td class="col-ip">223.233.82.60</td>
+            <td class="col-geo">Automated Telemetry, Unknown Country</td>
+            <td class="col-details" title="Unauthorized breach attempt: Brute Force Password Reset Request">Unauthorized breach attempt: Brute Force Password Re...</td>
             <td><span class="impact-badge impact-decoy">🪞 Decoy Served (Synthetic DB)</span></td>
             <td><button class="btn-block" onclick="mitigateThreat(this, '223.233.82.60')">⊘ Block IP</button></td>
           </tr>
 
-          <!-- Row 3 -->
+          <!-- Event 3 -->
           <tr data-ip="223.233.82.60">
-            <td class="timestamp-cell">30/08/26, 1:39:37 pm</td>
-            <td><span class="badge-incident badge-threat">⚠ THREAT</span></td>
-            <td class="ip-cell">223.233.82.60</td>
-            <td class="geo-cell">Nashik, India</td>
-            <td class="details-cell" title="Unauthorized breach attempt: SQL Injection payload detected on /api/user">Unauthorized breach attempt: SQL Injection payload detected on /api/user</td>
+            <td class="col-timestamp">30/08/26, 1:39:37 pm</td>
+            <td><span class="badge badge-threat">⚠ THREAT</span></td>
+            <td class="col-ip">223.233.82.60</td>
+            <td class="col-geo">Automated Telemetry, Unknown Country</td>
+            <td class="col-details" title="Unauthorized breach attempt: Brute Force Password Reset Request">Unauthorized breach attempt: Brute Force Password Re...</td>
             <td><span class="impact-badge impact-restricted">🛡 Restricted (0 Exposed)</span></td>
             <td><button class="btn-block" onclick="mitigateThreat(this, '223.233.82.60')">⊘ Block IP</button></td>
           </tr>
 
-          <!-- Row 4 -->
+          <!-- Event 4 -->
           <tr data-ip="185.220.101.5">
-            <td class="timestamp-cell">30/08/26, 1:16:08 am</td>
-            <td><span class="badge-incident badge-banned">⊘ BANNED</span></td>
-            <td class="ip-cell">185.220.101.5</td>
-            <td class="geo-cell">Amsterdam, Netherlands</td>
-            <td class="details-cell" title="IP Blacklisted via 1-Click Sentinel Action: Direct Exploit Attempt">IP Blacklisted via 1-Click Sentinel Action: Direct Exploit Attempt</td>
+            <td class="col-timestamp">30/08/26, 1:16:08 am</td>
+            <td><span class="badge badge-banned">⊘ BANNED</span></td>
+            <td class="col-ip">185.220.101.5</td>
+            <td class="col-geo">Amsterdam, Netherlands</td>
+            <td class="col-details" title="IP Blacklisted via 1-Click Sentinel Action: Unauthorized Port Probing">IP Blacklisted via 1-Click Sentinel Action: Unauthorized ...</td>
             <td><span class="impact-badge impact-zero">🔒 Zero Data Access</span></td>
             <td><span class="text-mitigated">Mitigated</span></td>
           </tr>
 
-          <!-- Row 5 -->
+          <!-- Event 5 -->
           <tr data-ip="185.220.101.5">
-            <td class="timestamp-cell">30/08/26, 1:14:11 am</td>
-            <td><span class="badge-incident badge-banned">⊘ BANNED</span></td>
-            <td class="ip-cell">185.220.101.5</td>
-            <td class="geo-cell">Amsterdam, Netherlands</td>
-            <td class="details-cell" title="IP Blacklisted via 1-Click Sentinel Action: Port Scan Reconnaissance">IP Blacklisted via 1-Click Sentinel Action: Port Scan Reconnaissance</td>
+            <td class="col-timestamp">30/08/26, 1:14:11 am</td>
+            <td><span class="badge badge-banned">⊘ BANNED</span></td>
+            <td class="col-ip">185.220.101.5</td>
+            <td class="col-geo">Amsterdam, Netherlands</td>
+            <td class="col-details" title="IP Blacklisted via 1-Click Sentinel Action: Direct Exploit Attempt">IP Blacklisted via 1-Click Sentinel Action: Unauthorized ...</td>
             <td><span class="impact-badge impact-zero">🔒 Zero Data Access</span></td>
             <td><span class="text-mitigated">Mitigated</span></td>
           </tr>
@@ -316,29 +328,18 @@
 
   <script>
     function mitigateThreat(buttonElement, ip) {
-      // Find all rows matching this attacker's IP
-      const matchingRows = document.querySelectorAll(`tr[data-ip="${ip}"]`);
+      const rows = document.querySelectorAll(`tr[data-ip="${ip}"]`);
 
-      matchingRows.forEach(row => {
-        // 1. Change Incident Type to BANNED
-        const incidentCell = row.cells[1];
-        incidentCell.innerHTML = '<span class="badge-incident badge-banned">⊘ BANNED</span>';
+      rows.forEach(row => {
+        // Change Incident Type to BANNED
+        row.cells[1].innerHTML = '<span class="badge badge-banned">⊘ BANNED</span>';
 
-        // 2. Change Attempted Details text to show Blacklist status
-        const detailsCell = row.cells[4];
-        detailsCell.textContent = `IP Blacklisted via 1-Click Sentinel Action: ${detailsCell.textContent}`;
-        detailsCell.setAttribute('title', detailsCell.textContent);
+        // Update Data Impact to Zero Data Access
+        row.cells[5].innerHTML = '<span class="impact-badge impact-zero">🔒 Zero Data Access</span>';
 
-        // 3. Update Data Impact Status to Zero Data Access
-        const impactCell = row.cells[5];
-        impactCell.innerHTML = '<span class="impact-badge impact-zero">🔒 Zero Data Access</span>';
-
-        // 4. Update Mitigation action cell
-        const actionCell = row.cells[6];
-        actionCell.innerHTML = '<span class="text-mitigated">Mitigated</span>';
+        // Replace Button with Mitigated text
+        row.cells[6].innerHTML = '<span class="text-mitigated">Mitigated</span>';
       });
-
-      console.log(`[SENTINEL CORE] IP ${ip} successfully blocked across all edge firewalls.`);
     }
   </script>
 </body>
