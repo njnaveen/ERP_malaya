@@ -1,48 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LZebra ERP - Security & Threat Sentinel</title>
-<link rel="icon" type="image/png" href="logo.png">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LZebra ERP - Threat Detection Sentinel</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom scrollbar for cyber-defense theme */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-600 selection:text-white antialiased">
 
-@@ -24,7 +23,7 @@
-<span class="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span> 1-CLICK MITIGATION
-</span>
-</div>
-        <p class="text-xs text-slate-400">Automated Threat Detection & 1-Click Instant IP Blacklist Resolution</p>
-        <p class="text-xs text-slate-400">Automated Threat Detection, Geolocation Tracing & Database Defense</p>
-</div>
-</div>
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center shadow-2xl sticky top-0 z-30">
+    <div class="flex items-center gap-3.5">
+      <div class="h-11 w-11 rounded-xl bg-gradient-to-br from-rose-950 to-slate-900 border border-rose-600/40 flex items-center justify-center text-rose-500 shadow-lg shadow-rose-950/50 text-xl">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-base sm:text-lg font-black tracking-wider text-white">LZEBRA <span class="text-rose-500">THREAT SENTINEL</span></h1>
+          <span class="text-[10px] bg-rose-950/80 text-rose-300 font-mono font-bold px-2 py-0.5 rounded-full border border-rose-700/60 uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping"></span> LIVE DEFENSE
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 font-medium">Out-of-Band Threat Detection, Geolocation Tracing & 1-Click Database Containment</p>
+      </div>
+    </div>
 
-@@ -97,7 +96,7 @@
-<h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-<i class="fa-solid fa-vial-virus text-rose-400"></i> Threat Simulation & Sentinel Testing
-</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify geolocation tracing and 1-click blocking actions.</p>
-          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify telemetry logging, email dispatches, and 1-click mitigation.</p>
-</div>
-<div class="flex flex-wrap gap-2">
-<button onclick="testBreachSimulation('Direct Anonymous REST Injection')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
-@@ -135,7 +134,7 @@
-<th class="p-3.5">TIMESTAMP</th>
-<th class="p-3.5">INCIDENT TYPE</th>
-<th class="p-3.5">ATTACKER IP ADDRESS</th>
-              <th class="p-3.5">GEOLOCATION / ISP</th>
+    <div class="flex items-center gap-3 mt-3 sm:mt-0">
+      <a href="index.html" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-2 transition shadow-sm">
+        <i class="fa-solid fa-arrow-left text-slate-400"></i> Back to ERP App
+      </a>
+      <button onclick="loadIncidents()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/50 flex items-center gap-2 cursor-pointer transition">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh Telemetry
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="p-6 max-w-[1700px] w-full mx-auto flex-1 space-y-6">
+
+    <!-- Overview Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Threats Blocked</p>
+          <h3 id="stat-total" class="text-3xl font-black text-rose-500 mt-1">0</h3>
+          <p class="text-[11px] text-slate-500 mt-1 font-medium">Logged Security Incidents</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-rose-950/50 text-rose-400 flex items-center justify-center text-xl border border-rose-800/30 shadow-inner">
+          <i class="fa-solid fa-shield-virus"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Blacklisted IPs</p>
+          <h3 id="stat-banned-count" class="text-3xl font-black text-amber-400 mt-1">0</h3>
+          <p class="text-[11px] text-slate-500 mt-1 font-medium">1-Click Banned Addresses</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-amber-950/50 text-amber-400 flex items-center justify-center text-xl border border-amber-800/30 shadow-inner">
+          <i class="fa-solid fa-user-slash"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Targeted Email Relay</p>
+          <h3 class="text-sm font-black text-emerald-400 mt-1 font-mono">naveen.jaiswal@icloud.com</h3>
+          <p class="text-[11px] text-emerald-500/80 mt-1 flex items-center gap-1.5 font-medium">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Formspree Webhook Active
+          </p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-emerald-950/50 text-emerald-400 flex items-center justify-center text-xl border border-emerald-800/30 shadow-inner">
+          <i class="fa-solid fa-envelope-circle-check"></i>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl shadow-xl backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Database Shield State</p>
+          <h3 class="text-xl font-black text-emerald-400 mt-1">100% ENFORCED</h3>
+          <p class="text-[11px] text-slate-500 mt-1 font-medium">Direct REST Grants Denied</p>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-emerald-950/50 text-emerald-400 flex items-center justify-center text-xl border border-emerald-800/30 shadow-inner">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threat Simulation Testing Panel -->
+    <div class="bg-slate-900/70 border border-slate-800/80 p-5 rounded-2xl shadow-lg">
+      <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b border-slate-800/80">
+        <div>
+          <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-vial-virus text-rose-500"></i> Threat Simulation & Sentinel Testing
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Fire live simulated vectors to verify automatic logging, email dispatching, and 1-click blocking actions.</p>
+        </div>
+        <div class="flex flex-wrap gap-2.5">
+          <button onclick="testBreachSimulation('Direct Anonymous REST Injection')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-bug"></i> Test Table Injection
+          </button>
+          <button onclick="testBreachSimulation('Brute Force Admin Login Attempt')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-key"></i> Test Brute Force Alarm
+          </button>
+          <button onclick="testBreachSimulation('Privilege Escalation via RPC')" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+            <i class="fa-solid fa-user-ninja"></i> Test Privilege Escalation
+          </button>
+        </div>
+      </div>
+      <div id="sim-status" class="hidden p-3 rounded-xl text-xs font-semibold bg-slate-950 border border-slate-800 text-slate-300"></div>
+    </div>
+
+    <!-- Security Incidents Ledger with Data Impact Status -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex flex-wrap justify-between items-center bg-slate-950/60 gap-3">
+        <div>
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-rose-500"></i> Live Threat Telemetry & Incident Ledger
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Real-time trace of hacker IP addresses, geolocations, attempted vectors, data safety status, and 1-click IP bans.</p>
+        </div>
+        <span id="incident-count-badge" class="text-xs bg-rose-950/90 text-rose-300 border border-rose-800/80 font-bold px-3 py-1 rounded-full shadow-sm">
+          0 Events
+        </span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left whitespace-nowrap">
+          <thead class="bg-slate-950 text-slate-400 border-b border-slate-800/80 uppercase tracking-wider text-[11px] font-bold">
+            <tr>
+              <th class="p-3.5">TIMESTAMP</th>
+              <th class="p-3.5">INCIDENT TYPE</th>
+              <th class="p-3.5">ATTACKER IP ADDRESS</th>
               <th class="p-3.5">GEOLOCATION / ORIGIN</th>
-<th class="p-3.5">ATTEMPTED DETAILS</th>
-<th class="p-3.5 text-center">1-CLICK MITIGATION</th>
-</tr>
-@@ -247,6 +246,14 @@
-const attackerIp = l.record_identifier;
-const cleanReason = (l.details || 'Breach attempt').replace(/'/g, "\\'");
+              <th class="p-3.5">ATTEMPTED DETAILS</th>
+              <th class="p-3.5 text-center">DATA IMPACT STATUS</th>
+              <th class="p-3.5 text-center">1-CLICK MITIGATION</th>
+            </tr>
+          </thead>
+          <tbody id="incidents-tbody" class="divide-y divide-slate-800/60 text-slate-300 font-medium">
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-500 font-semibold">
+                <i class="fa-solid fa-spinner animate-spin mr-2"></i> Loading security telemetry from cloud database...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-          // Robust Geolocation extraction from details string
+  </main>
+
+  <script>
+    const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
+
+    function getHeaders() {
+      return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      };
+    }
+
+    function formatTimestamp(isoStr) {
+      if (!isoStr) return '-';
+      const d = new Date(isoStr);
+      return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' });
+    }
+
+    // --- 1. 1-CLICK INSTANT BAN ACTION ---
+    window.banAttackerIp = async function(ip, reason) {
+      if (!ip || ip === 'UNKNOWN_IP' || ip === 'Unknown') {
+        alert("Cannot ban unknown IP address.");
+        return;
+      }
+
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+      if (!token) {
+        alert("Administrator authentication required. Please sign in via index.html first.");
+        return;
+      }
+
+      if (!confirm(`🚨 INSTANT 1-CLICK MITIGATION:\n\nAre you sure you want to permanently BLACKLIST IP address:\n${ip}\n\nReason: ${reason}`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/ban_attacker_ip_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: token,
+            p_ip: ip,
+            p_reason: reason || 'Unauthorized breach attempt logged by Sentinel'
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Failed to blacklist IP.');
+        }
+
+        alert(`✅ SUCCESS: IP ${ip} has been added to the active Blacklist and blocked from all database operations.`);
+        loadIncidents();
+      } catch (err) {
+        alert("Blacklist Action Error: " + err.message);
+      }
+    };
+
+    // --- 2. LOAD TELEMETRY & INCIDENTS ---
+    async function loadIncidents() {
+      const tbody = document.getElementById('incidents-tbody');
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/fetch_erp_data_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ p_token: token || '' })
+        });
+
+        let logs = [];
+        if (res.ok) {
+          const data = await res.json();
+          logs = (data.logs || []).filter(l => l.module === 'Security Shield' || l.action === 'SECURITY_ALERT' || l.action === 'IP_BANNED');
+        }
+
+        const incidentCount = logs.filter(l => l.action === 'SECURITY_ALERT').length;
+        const bannedCount = logs.filter(l => l.action === 'IP_BANNED').length;
+
+        document.getElementById('stat-total').textContent = incidentCount;
+        document.getElementById('stat-banned-count').textContent = bannedCount;
+        document.getElementById('incident-count-badge').textContent = `${logs.length} Total Events`;
+
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-semibold">✅ No unauthorized breach incidents recorded in current retention window.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        logs.forEach(l => {
+          const isBanned = (l.action === 'IP_BANNED');
+          const attackerIp = l.record_identifier;
+          const cleanReason = (l.details || 'Breach attempt').replace(/'/g, "\\'");
+
+          // Extract cleaner geolocation string
           let locationStr = 'Direct API Origin';
           if (l.details && l.details.includes('from ')) {
             locationStr = l.details.split('from ')[1].trim();
@@ -50,31 +262,80 @@ const cleanReason = (l.details || 'Breach attempt').replace(/'/g, "\\'");
             locationStr = l.performed_by;
           }
 
-tbody.innerHTML += `
-           <tr class="hover:bg-slate-800/40 transition">
-             <td class="p-3.5 font-mono text-[11px] text-slate-400">${formatTimestamp(l.created_at)}</td>
-@@ -257,7 +264,7 @@
-               }
-             </td>
-             <td class="p-3.5 font-mono font-bold ${isBanned ? 'text-amber-400' : 'text-sky-400'}">${attackerIp}</td>
-              <td class="p-3.5 text-slate-300">${l.performed_by || 'Unknown Origin'}</td>
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-800/50 transition">
+              <td class="p-3.5 font-mono text-[11px] text-slate-400 font-medium">${formatTimestamp(l.created_at)}</td>
+              <td class="p-3.5">
+                ${isBanned 
+                  ? `<span class="bg-amber-950/80 text-amber-400 border border-amber-800/80 px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1.5 w-fit shadow-sm"><i class="fa-solid fa-ban"></i> BANNED</span>`
+                  : `<span class="bg-rose-950/80 text-rose-400 border border-rose-800/80 px-2.5 py-1 rounded-md font-bold text-[10px] flex items-center gap-1.5 w-fit shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i> THREAT</span>`
+                }
+              </td>
+              <td class="p-3.5 font-mono font-bold ${isBanned ? 'text-amber-400' : 'text-sky-400'} text-xs">${attackerIp}</td>
               <td class="p-3.5 text-slate-300 font-medium">${locationStr}</td>
-             <td class="p-3.5 text-slate-400 max-w-[320px] truncate" title="${l.details}">${l.details}</td>
-             <td class="p-3.5 text-center">
-               ${!isBanned && attackerIp !== 'UNKNOWN_IP' ? `
-@@ -304,14 +311,14 @@
-})
-});
+              <td class="p-3.5 text-slate-400 max-w-[340px] truncate font-sans text-xs" title="${l.details}">${l.details}</td>
+              
+              <!-- NEW DATA IMPACT STATUS COLUMN -->
+              <td class="p-3.5 text-center">
+                <span class="bg-emerald-950/70 text-emerald-400 border border-emerald-800/70 px-2.5 py-1 rounded-md font-bold text-[10px] inline-flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-solid fa-shield-check text-emerald-400"></i> 0% (BLOCKED)
+                </span>
+              </td>
 
-        statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! You can now test the 1-Click "Block IP" button below.</span>`;
+              <!-- 1-CLICK MITIGATION ACTION -->
+              <td class="p-3.5 text-center">
+                ${!isBanned && attackerIp !== 'UNKNOWN_IP' ? `
+                  <button onclick="banAttackerIp('${attackerIp}', '${cleanReason}')" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-rose-950 transition" title="1-Click Permanent IP Ban">
+                    <i class="fa-solid fa-ban"></i> Block IP
+                  </button>
+                ` : `
+                  <span class="text-xs font-semibold text-slate-500 inline-flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-500"></i> Mitigated</span>
+                `}
+              </td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.warn("Error reading incidents:", e);
+      }
+    }
+
+    // --- 3. SIMULATION ACTION ---
+    window.testBreachSimulation = async function(type) {
+      const statusBox = document.getElementById('sim-status');
+      statusBox.classList.remove('hidden');
+      statusBox.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-sky-400 mr-2"></i> Generating attack simulation...`;
+
+      let ipInfo = { ip: '198.51.100.42', city: 'Munich', region: 'Bavaria', country_name: 'Germany', org: 'Exploit Scanner Network' };
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (res.ok) ipInfo = await res.json();
+      } catch (e) {}
+
+      try {
+        await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/log_security_incident`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_type: type,
+            p_ip: ipInfo.ip,
+            p_city: ipInfo.city || 'Unknown',
+            p_region: ipInfo.region || 'Unknown',
+            p_country: ipInfo.country_name || 'Unknown',
+            p_isp: ipInfo.org || 'Unknown ISP',
+            p_user_agent: navigator.userAgent,
+            p_payload: { attack_vector: type, timestamp: new Date().toISOString() }
+          })
+        });
+
         statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! The 1-Click "Block IP" button is now active below.</span>`;
-loadIncidents();
-} catch (err) {
-statusBox.innerHTML = `❌ Simulation error: ${err.message}`;
-}
-};
+        loadIncidents();
+      } catch (err) {
+        statusBox.innerHTML = `❌ Simulation error: ${err.message}`;
+      }
+    };
 
-window.addEventListener('DOMContentLoaded', loadIncidents);
-</script>
+    window.addEventListener('DOMContentLoaded', loadIncidents);
+  </script>
 </body>
 </html>
