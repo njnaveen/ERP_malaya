@@ -1,346 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Security Sentinel — Threat Telemetry Ledger</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-
-    body {
-      background-color: #060911;
-      color: #94a3b8;
-      padding: 24px;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
-
-    .ledger-container {
-      background-color: #0b1120;
-      border: 1px solid #162035;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 1540px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-      overflow: hidden;
-    }
-
-    /* Header Section */
-    .ledger-header {
-      padding: 22px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #141e33;
-    }
-
-    .header-title-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .header-title {
-      color: #ffffff;
-      font-size: 18px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #f43f5e;
-    }
-
-    .header-subtitle {
-      font-size: 13px;
-      color: #64748b;
-    }
-
-    .event-counter {
-      background: rgba(225, 29, 72, 0.12);
-      border: 1px solid rgba(225, 29, 72, 0.35);
-      color: #fb7185;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 8px;
-      letter-spacing: 0.02em;
-    }
-
-    /* Table Structure */
-    .table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 13px;
-    }
-
-    thead th {
-      color: #526585;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 16px 20px;
-      border-bottom: 1px solid #141e33;
-      background-color: #080d19;
-      white-space: nowrap;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid #101828;
-      transition: background-color 0.15s ease;
-    }
-
-    tbody tr:hover {
-      background-color: rgba(30, 41, 59, 0.35);
-    }
-
-    tbody td {
-      padding: 16px 20px;
-      vertical-align: middle;
-      color: #cbd5e1;
-    }
-
-    /* Column Specific Styles */
-    .col-timestamp {
-      color: #94a3b8;
-      font-size: 12.5px;
-      white-space: nowrap;
-    }
-
-    .col-ip {
-      color: #38bdf8;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .col-geo {
-      color: #f1f5f9;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .col-details {
-      color: #94a3b8;
-      max-width: 380px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Incident Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 4px 9px;
-      border-radius: 6px;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-    }
-
-    .badge-threat {
-      background: rgba(225, 29, 72, 0.14);
-      color: #f43f5e;
-      border: 1px solid rgba(225, 29, 72, 0.35);
-    }
-
-    .badge-banned {
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.35);
-    }
-
-    /* Impact Status Badges */
-    .impact-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 6px;
-      white-space: nowrap;
-    }
-
-    .impact-restricted {
-      background: rgba(16, 185, 129, 0.12);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-
-    .impact-decoy {
-      background: rgba(168, 85, 247, 0.14);
-      color: #c084fc;
-      border: 1px solid rgba(168, 85, 247, 0.35);
-    }
-
-    .impact-zero {
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    /* 1-Click Action Buttons */
-    .btn-block {
-      background-color: #e11d48;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      padding: 7px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-    }
-
-    .btn-block:hover {
-      background-color: #be123c;
-    }
-
-    .btn-block:active {
-      transform: scale(0.97);
-    }
-
-    .text-mitigated {
-      color: #475569;
-      font-weight: 600;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LZebra ERP - Security & Threat Sentinel</title>
+<link rel="icon" type="image/png" href="logo.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-500 selection:text-white">
 
-  <div class="ledger-container">
-    <div class="ledger-header">
-      <div class="header-title-group">
-        <div class="header-title">
-          <span class="header-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-            </svg>
-          </span>
-          Live Threat Telemetry &amp; 1-Click Resolution Ledger
-        </div>
-        <div class="header-subtitle">Click the action buttons on any row to instantly ban the attacker's IP.</div>
-      </div>
-      <div class="event-counter" id="eventCounter">12 Total Events</div>
-    </div>
+@@ -24,7 +23,7 @@
+<span class="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span> 1-CLICK MITIGATION
+</span>
+</div>
+        <p class="text-xs text-slate-400">Automated Threat Detection & 1-Click Instant IP Blacklist Resolution</p>
+        <p class="text-xs text-slate-400">Automated Threat Detection, Geolocation Tracing & Database Defense</p>
+</div>
+</div>
 
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Incident Type</th>
-            <th>Attacker IP Address</th>
-            <th>Geolocation / Origin</th>
-            <th>Attempted Details</th>
-            <th>Data Impact Status</th>
-            <th>1-Click Mitigation</th>
-          </tr>
-        </thead>
-        <tbody id="telemetryBody">
-          <!-- Event 1 -->
-          <tr data-ip="203.0.113.195">
-            <td class="col-timestamp">30/08/26, 9:23:28 pm</td>
-            <td><span class="badge badge-threat">⚠ THREAT</span></td>
-            <td class="col-ip">203.0.113.195</td>
-            <td class="col-geo">Tokyo, Japan</td>
-            <td class="col-details" title="Unauthorized breach attempt: Direct Database Verification Payload Injection">Unauthorized breach attempt: Direct Database Verificat...</td>
-            <td><span class="impact-badge impact-restricted">🛡 Restricted (0 Exposed)</span></td>
-            <td><button class="btn-block" onclick="mitigateThreat(this, '203.0.113.195')">⊘ Block IP</button></td>
-          </tr>
+@@ -97,7 +96,7 @@
+<h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+<i class="fa-solid fa-vial-virus text-rose-400"></i> Threat Simulation & Sentinel Testing
+</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify geolocation tracing and 1-click blocking actions.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Simulate attack scenarios to verify telemetry logging, email dispatches, and 1-click mitigation.</p>
+</div>
+<div class="flex flex-wrap gap-2">
+<button onclick="testBreachSimulation('Direct Anonymous REST Injection')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition">
+@@ -135,7 +134,7 @@
+<th class="p-3.5">TIMESTAMP</th>
+<th class="p-3.5">INCIDENT TYPE</th>
+<th class="p-3.5">ATTACKER IP ADDRESS</th>
+              <th class="p-3.5">GEOLOCATION / ISP</th>
+              <th class="p-3.5">GEOLOCATION / ORIGIN</th>
+<th class="p-3.5">ATTEMPTED DETAILS</th>
+<th class="p-3.5 text-center">1-CLICK MITIGATION</th>
+</tr>
+@@ -247,6 +246,14 @@
+const attackerIp = l.record_identifier;
+const cleanReason = (l.details || 'Breach attempt').replace(/'/g, "\\'");
 
-          <!-- Event 2 -->
-          <tr data-ip="223.233.82.60">
-            <td class="col-timestamp">30/08/26, 1:39:38 pm</td>
-            <td><span class="badge badge-threat">⚠ THREAT</span></td>
-            <td class="col-ip">223.233.82.60</td>
-            <td class="col-geo">Automated Telemetry, Unknown Country</td>
-            <td class="col-details" title="Unauthorized breach attempt: Brute Force Password Reset Request">Unauthorized breach attempt: Brute Force Password Re...</td>
-            <td><span class="impact-badge impact-decoy">🪞 Decoy Served (Synthetic DB)</span></td>
-            <td><button class="btn-block" onclick="mitigateThreat(this, '223.233.82.60')">⊘ Block IP</button></td>
-          </tr>
+          // Robust Geolocation extraction from details string
+          let locationStr = 'Direct API Origin';
+          if (l.details && l.details.includes('from ')) {
+            locationStr = l.details.split('from ')[1].trim();
+          } else if (l.performed_by && l.performed_by !== 'Security Sentinel') {
+            locationStr = l.performed_by;
+          }
 
-          <!-- Event 3 -->
-          <tr data-ip="223.233.82.60">
-            <td class="col-timestamp">30/08/26, 1:39:37 pm</td>
-            <td><span class="badge badge-threat">⚠ THREAT</span></td>
-            <td class="col-ip">223.233.82.60</td>
-            <td class="col-geo">Automated Telemetry, Unknown Country</td>
-            <td class="col-details" title="Unauthorized breach attempt: Brute Force Password Reset Request">Unauthorized breach attempt: Brute Force Password Re...</td>
-            <td><span class="impact-badge impact-restricted">🛡 Restricted (0 Exposed)</span></td>
-            <td><button class="btn-block" onclick="mitigateThreat(this, '223.233.82.60')">⊘ Block IP</button></td>
-          </tr>
+tbody.innerHTML += `
+           <tr class="hover:bg-slate-800/40 transition">
+             <td class="p-3.5 font-mono text-[11px] text-slate-400">${formatTimestamp(l.created_at)}</td>
+@@ -257,7 +264,7 @@
+               }
+             </td>
+             <td class="p-3.5 font-mono font-bold ${isBanned ? 'text-amber-400' : 'text-sky-400'}">${attackerIp}</td>
+              <td class="p-3.5 text-slate-300">${l.performed_by || 'Unknown Origin'}</td>
+              <td class="p-3.5 text-slate-300 font-medium">${locationStr}</td>
+             <td class="p-3.5 text-slate-400 max-w-[320px] truncate" title="${l.details}">${l.details}</td>
+             <td class="p-3.5 text-center">
+               ${!isBanned && attackerIp !== 'UNKNOWN_IP' ? `
+@@ -304,14 +311,14 @@
+})
+});
 
-          <!-- Event 4 -->
-          <tr data-ip="185.220.101.5">
-            <td class="col-timestamp">30/08/26, 1:16:08 am</td>
-            <td><span class="badge badge-banned">⊘ BANNED</span></td>
-            <td class="col-ip">185.220.101.5</td>
-            <td class="col-geo">Amsterdam, Netherlands</td>
-            <td class="col-details" title="IP Blacklisted via 1-Click Sentinel Action: Unauthorized Port Probing">IP Blacklisted via 1-Click Sentinel Action: Unauthorized ...</td>
-            <td><span class="impact-badge impact-zero">🔒 Zero Data Access</span></td>
-            <td><span class="text-mitigated">Mitigated</span></td>
-          </tr>
+        statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! You can now test the 1-Click "Block IP" button below.</span>`;
+        statusBox.innerHTML = `✅ <span class="text-emerald-400 font-bold">Threat incident logged! The 1-Click "Block IP" button is now active below.</span>`;
+loadIncidents();
+} catch (err) {
+statusBox.innerHTML = `❌ Simulation error: ${err.message}`;
+}
+};
 
-          <!-- Event 5 -->
-          <tr data-ip="185.220.101.5">
-            <td class="col-timestamp">30/08/26, 1:14:11 am</td>
-            <td><span class="badge badge-banned">⊘ BANNED</span></td>
-            <td class="col-ip">185.220.101.5</td>
-            <td class="col-geo">Amsterdam, Netherlands</td>
-            <td class="col-details" title="IP Blacklisted via 1-Click Sentinel Action: Direct Exploit Attempt">IP Blacklisted via 1-Click Sentinel Action: Unauthorized ...</td>
-            <td><span class="impact-badge impact-zero">🔒 Zero Data Access</span></td>
-            <td><span class="text-mitigated">Mitigated</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <script>
-    function mitigateThreat(buttonElement, ip) {
-      const rows = document.querySelectorAll(`tr[data-ip="${ip}"]`);
-
-      rows.forEach(row => {
-        // Change Incident Type to BANNED
-        row.cells[1].innerHTML = '<span class="badge badge-banned">⊘ BANNED</span>';
-
-        // Update Data Impact to Zero Data Access
-        row.cells[5].innerHTML = '<span class="impact-badge impact-zero">🔒 Zero Data Access</span>';
-
-        // Replace Button with Mitigated text
-        row.cells[6].innerHTML = '<span class="text-mitigated">Mitigated</span>';
-      });
-    }
-  </script>
+window.addEventListener('DOMContentLoaded', loadIncidents);
+</script>
 </body>
 </html>
