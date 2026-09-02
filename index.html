@@ -135,7 +135,7 @@
   </div>
 
   <!-- 3. EDIT USER MODAL -->
-  <div id="edit-user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div id="edit-user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-left relative">
       <button type="button" onclick="closeEditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
 
@@ -432,7 +432,12 @@
       <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center bg-slate-50">
           <h3 class="font-bold text-slate-800 text-sm">Raw Material Master Sheet</h3>
-          <span id="rm-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Items</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="exportToSpreadsheet('Raw Materials', DB.rawMaterials, 'Raw_Material_Master')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span id="rm-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Items</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left whitespace-nowrap">
@@ -532,7 +537,12 @@
       <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center bg-slate-50">
           <h3 class="font-bold text-slate-800 text-sm">Purchase Entry Register</h3>
-          <span id="purchase-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Entries</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="exportToSpreadsheet('Purchases', DB.purchases, 'Purchase_Entry_Register')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span id="purchase-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Entries</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left whitespace-nowrap">
@@ -614,7 +624,12 @@
       <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center bg-slate-50">
           <h3 class="font-bold text-slate-800 text-sm">Product Master Sheet</h3>
-          <span id="product-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Products</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="exportToSpreadsheet('Products', DB.products, 'Product_Master_Sheet')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span id="product-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Products</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left whitespace-nowrap">
@@ -702,7 +717,12 @@
       <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div class="p-4 border-b flex justify-between items-center bg-slate-50">
           <h3 class="font-bold text-slate-800 text-sm">Sales & Revenue Register</h3>
-          <span id="sales-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Invoices</span>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="exportToSpreadsheet('Sales', DB.sales, 'Sales_Revenue_Register')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span id="sales-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Invoices</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs text-left whitespace-nowrap">
@@ -775,7 +795,7 @@
 
     <!-- TAB 6: AUDIT & ACTIVITY LOGS -->
     <section id="sec-audit-logs" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
+      <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
         <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
           <div>
             <div class="flex items-center gap-2">
@@ -787,7 +807,7 @@
               </span>
             </div>
             <p class="text-xs text-slate-500 mt-1">
-              Real-time record of all system entries, modifications, and deletions.
+              Real-time record of all system entries, modifications, spreadsheet exports, and security actions.
             </p>
           </div>
           
@@ -1204,6 +1224,62 @@
       }
     }
 
+    // --- UNIVERSAL SPREADSHEET EXPORTER WITH AUDIT TRAIL ---
+    window.exportToSpreadsheet = async function(moduleName, dataArray, filename) {
+      if (!dataArray || dataArray.length === 0) {
+        alert(`No data available to export for ${moduleName}.`);
+        return;
+      }
+
+      if (!SESSION_TOKEN) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      try {
+        // 1. Log export action via secure database RPC
+        await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/log_data_export_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: SESSION_TOKEN,
+            p_module: moduleName,
+            p_row_count: dataArray.length
+          })
+        });
+
+        // 2. Generate CSV data
+        const headers = Object.keys(dataArray[0]);
+        const csvRows = [];
+        csvRows.push(headers.map(h => `"${h.toUpperCase().replace(/_/g, ' ')}"`).join(','));
+
+        dataArray.forEach(row => {
+          const values = headers.map(header => {
+            let val = row[header] === null || row[header] === undefined ? '' : row[header];
+            if (typeof val === 'object') val = JSON.stringify(val);
+            return `"${String(val).replace(/"/g, '""')}"`;
+          });
+          csvRows.push(values.join(','));
+        });
+
+        // 3. Initiate native browser download (.csv opens natively in Microsoft Excel)
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${filename}_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Reload to display new audit log entry
+        loadDataFromDb();
+
+      } catch (err) {
+        console.warn("Export logging warning:", err);
+      }
+    };
+
     function renderRawMaterials() {
       const tbody = document.getElementById('rm-tbody');
       tbody.innerHTML = '';
@@ -1387,6 +1463,8 @@
           actionBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-plus mr-1"></i>${l.action}</span>`;
         } else if (l.action === 'UPDATE' || l.action === 'PASSWORD_RESET') {
           actionBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-pen mr-1"></i>${l.action}</span>`;
+        } else if (l.action === 'DATA_EXPORT') {
+          actionBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-file-excel mr-1"></i>EXPORT</span>`;
         } else if (l.action === 'SECURITY_ALERT') {
           actionBadge = `<span class="bg-rose-600 text-white px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-triangle-exclamation mr-1"></i>THREAT</span>`;
         } else {
