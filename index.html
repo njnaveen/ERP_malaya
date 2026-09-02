@@ -1,921 +1,412 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LZebra ERP - Cloud Connected & RBAC</title>
-  <link rel="icon" type="image/png" href="logo.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LZebra ERP - Enterprise Management</title>
+  <link rel="icon" type="image/png" href="logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    .tab-btn { border-bottom: 3px solid transparent; }
-    .tab-active { border-bottom: 3px solid #16a34a !important; color: #15803d !important; font-weight: 700 !important; }
-    input, select { outline: none; }
-    input:focus, select:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.2); }
-
-    @media print {
-      header, nav, form, .no-print, button, .action-col, #login-modal, #reset-modal, #edit-user-modal {
-        display: none !important;
-      }
-      body {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        font-size: 11pt !important;
-      }
-      main {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-      }
-      th, td {
-        border: 1px solid #cbd5e1 !important;
-        padding: 6px 8px !important;
-      }
-    }
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
-  <!-- 1. LOGIN MODAL -->
-  <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-8 text-center">
-      <div class="flex justify-center mb-4">
-        <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-16 w-16 rounded-xl border border-emerald-500/50 shadow-md bg-black object-cover" />
+  <!-- ================= AUTH CONTAINER (MODAL / OVERLAY) ================= -->
+  <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-8 relative">
+      <div class="text-center mb-6">
+        <div class="h-12 w-12 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-2xl mx-auto shadow-md mb-3">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">LZebra ERP</h2>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Enterprise Authentication Portal</p>
       </div>
-      <h2 class="text-2xl font-black text-slate-900 tracking-wider">LZEBRA <span class="text-emerald-600">ERP</span></h2>
-      <p class="text-xs text-slate-500 mt-1 mb-6">Enter your authorized credentials to access workspace</p>
 
-      <form onsubmit="handleLogin(event)" autocomplete="off" class="space-y-4 text-left text-xs">
+      <!-- Login Form -->
+      <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
         <div>
-          <label class="font-bold text-slate-600 block mb-1">USERNAME</label>
-          <div class="relative">
-            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-400"></i>
-            <input required id="login_username" autocomplete="username" placeholder="e.g. admin, malaya" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
-          </div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Username</label>
+          <input type="text" id="login-username" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition" placeholder="e.g. admin" />
         </div>
-
         <div>
-          <div class="flex justify-between items-center mb-1">
-            <label class="font-bold text-slate-600">PASSWORD</label>
-            <button type="button" onclick="openResetModal()" class="text-emerald-600 hover:text-emerald-800 font-semibold cursor-pointer">Forgot / Reset?</button>
-          </div>
-          <div class="relative">
-            <i class="fa-solid fa-lock absolute left-3 top-3 text-slate-400"></i>
-            <input required type="password" id="login_password" autocomplete="new-password" placeholder="••••••••" class="w-full border border-slate-300 pl-9 p-2.5 rounded-lg font-medium text-sm text-slate-800 bg-slate-50">
-          </div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+          <input type="password" id="login-password" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition" placeholder="••••••••" />
         </div>
-
-        <div id="login-err" class="hidden p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"></div>
-
-        <button type="submit" id="btn-login" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-md cursor-pointer transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-right-to-bracket"></i> Secure Sign In
+        <button type="submit" id="btn-login-submit" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In to ERP
         </button>
       </form>
-
-      <div class="mt-6 pt-4 border-t text-[11px] text-slate-400">
-        LZebra Enterprise Security & Session-Gated Architecture
-      </div>
+      <div id="login-msg" class="hidden mt-4 p-3 rounded-lg text-xs font-semibold text-center"></div>
     </div>
   </div>
 
-  <!-- 2. SECURITY Q&A PASSWORD RESET MODAL -->
-  <div id="reset-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-8 text-center relative">
-      <button type="button" onclick="closeResetModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
-
-      <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mx-auto mb-3">
-        <i class="fa-solid fa-shield-halved"></i>
-      </div>
-      <h3 class="text-xl font-bold text-slate-900">Reset Password</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-6">Verify identity using your security question</p>
-
-      <form id="reset-step-1" onsubmit="lookupSecurityQuestion(event)" class="space-y-4 text-left text-xs">
+  <!-- ================= TOP MAIN APP NAVBAR ================= -->
+  <header class="bg-slate-950 text-white px-6 py-3 flex flex-wrap justify-between items-center shadow-lg border-b border-slate-800 sticky top-0 z-30">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="h-9 w-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-lg shadow-md">
+          LZ
+        </div>
         <div>
-          <label class="font-bold text-slate-600 block mb-1">ENTER YOUR USERNAME</label>
-          <input required id="rst_username" placeholder="e.g. test_worker_01" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400">ERP</span></h1>
+            <span id="user-role-badge" class="text-[10px] bg-purple-900/80 text-purple-300 font-mono font-bold px-2 py-0.5 rounded border border-purple-700/60 uppercase">
+              ADMINISTRATOR
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">User: <span id="current-user-display" class="text-slate-200 font-semibold">System Administrator</span></p>
         </div>
-        <button type="submit" id="btn-lookup-user" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
-          Continue
-        </button>
-      </form>
-
-      <form id="reset-step-2" onsubmit="verifyAnswerAndChangePassword(event)" class="space-y-4 text-left text-xs hidden">
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-xs">
-          <span class="text-[10px] text-slate-400 font-bold uppercase block">Security Question:</span>
-          <p id="disp-sec-question" class="font-bold text-slate-900 text-sm mt-0.5"></p>
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600 block mb-1">YOUR SECRET ANSWER *</label>
-          <input required id="rst_answer" placeholder="Enter answer" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600 block mb-1">NEW PASSWORD *</label>
-          <input required type="password" id="rst_newpass" placeholder="At least 6 characters" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600 block mb-1">CONFIRM NEW PASSWORD *</label>
-          <input required type="password" id="rst_confpass" placeholder="Confirm new password" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50">
-        </div>
-
-        <button type="submit" id="btn-sub-reset" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition">
-          Verify & Save New Password
-        </button>
-      </form>
-
-      <div id="reset-err" class="hidden mt-3 p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"></div>
-      <div id="reset-succ" class="hidden mt-3 p-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold text-center"></div>
-    </div>
-  </div>
-
-  <!-- 3. EDIT USER MODAL -->
-  <div id="edit-user-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 text-left relative">
-      <button type="button" onclick="closeEditModal()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
-
-      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-1">
-        <i class="fa-solid fa-user-pen text-purple-600"></i> Update User Profile
-      </h3>
-      <p class="text-xs text-slate-500 mb-4">Modify account metadata, security question, or update password.</p>
-
-      <form id="editUserForm" onsubmit="handleUpdateUser(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        <input type="hidden" id="edit_user_id">
-        
-        <div>
-          <label class="font-bold text-slate-600">USERNAME</label>
-          <input readonly id="edit_username" class="mt-1 w-full border p-2 rounded bg-slate-100 font-mono text-slate-500">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600">NEW PASSWORD (OPTIONAL)</label>
-          <input type="password" id="edit_password" placeholder="Leave blank to keep current" class="mt-1 w-full border p-2 rounded bg-slate-50">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600">FULL NAME *</label>
-          <input required id="edit_fullname" class="mt-1 w-full border p-2 rounded">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600">MOBILE NUMBER *</label>
-          <input required id="edit_phone" class="mt-1 w-full border p-2 rounded font-mono">
-        </div>
-
-        <div class="sm:col-span-2">
-          <label class="font-bold text-slate-600">SECURITY QUESTION *</label>
-          <select required id="edit_sec_question" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-            <option value="What was the name of your first school?">What was the name of your first school?</option>
-            <option value="What is your favorite color?">What is your favorite color?</option>
-            <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-            <option value="What was your first car or bike model?">What was your first car or bike model?</option>
-            <option value="What is the name of your hometown?">What is the name of your hometown?</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600">SECRET ANSWER (OPTIONAL)</label>
-          <input id="edit_sec_answer" placeholder="Leave blank to keep current" class="mt-1 w-full border p-2 rounded">
-        </div>
-
-        <div>
-          <label class="font-bold text-slate-600">ROLE LEVEL *</label>
-          <select required id="edit_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-            <option value="super_user">Super Users (Dashboard, Entry & Reports)</option>
-            <option value="user">Users (Entry Tabs Only)</option>
-            <option value="admin" id="opt_edit_admin" class="hidden">Administrator</option>
-          </select>
-        </div>
-
-        <div class="sm:col-span-2 flex justify-end gap-2 pt-3 border-t mt-2">
-          <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-semibold text-xs cursor-pointer">
-            Cancel
-          </button>
-          <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold text-xs cursor-pointer shadow-sm">
-            Save Changes to Cloud DB
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Header -->
-  <header class="bg-slate-950 text-white px-6 py-3 flex flex-wrap justify-between items-center shadow-lg border-b border-emerald-900/40 no-print">
-    <div class="flex items-center gap-3.5">
-      <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-10 w-10 rounded-lg border border-emerald-500/40 object-cover bg-black" />
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-lg font-black tracking-wider text-white">LZEBRA <span class="text-emerald-400 font-extrabold">ERP</span></h1>
-          <span id="role-badge" class="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded border border-slate-700 uppercase">GUEST</span>
-        </div>
-        <p class="text-[11px] text-slate-400">User: <span id="user-display" class="text-white font-semibold">Not Signed In</span></p>
       </div>
     </div>
 
     <div class="flex items-center gap-3 mt-2 sm:mt-0">
-      <a href="security.html" class="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-300 text-xs font-semibold rounded flex items-center gap-1.5 border border-rose-800 transition" title="Open Security Sentinel Console">
+      <a href="security.html" class="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition">
         <i class="fa-solid fa-shield-halved text-rose-400"></i> Sentinel
       </a>
-      <span id="db-status" class="text-xs bg-slate-900 px-3 py-1.5 rounded border border-slate-800 flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Initializing...
+      <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> Connected
       </span>
-      <button type="button" onclick="loadDataFromDb()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer border border-slate-700">
+      <button onclick="fetchAllData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 flex items-center gap-1.5 transition cursor-pointer">
         <i class="fa-solid fa-arrows-rotate"></i> Sync
       </button>
-      <button type="button" onclick="handleLogout()" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-semibold rounded flex items-center gap-1.5 cursor-pointer transition">
+      <button onclick="handleLogout()" class="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold rounded-lg shadow flex items-center gap-1.5 transition cursor-pointer">
         <i class="fa-solid fa-power-off"></i> Logout
       </button>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
-  <nav class="bg-white border-b px-6 flex space-x-6 text-sm overflow-x-auto shadow-sm no-print">
-    <button type="button" onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3.5 px-2 tab-active text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-chart-line text-emerald-600"></i> DASHBOARD
-    </button>
-    <button type="button" onclick="switchTab('rm-master')" id="tab-rm-master" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-boxes-stacked"></i> RAW MATERIAL MASTER
-    </button>
-    <button type="button" onclick="switchTab('purchase-entry')" id="tab-purchase-entry" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-cart-shopping"></i> PURCHASE ENTRY
-    </button>
-    <button type="button" onclick="switchTab('product-master')" id="tab-product-master" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-shirt"></i> PRODUCT MASTER
-    </button>
-    <button type="button" onclick="switchTab('sales-entry')" id="tab-sales-entry" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-receipt text-emerald-600"></i> SALES ENTRY
-    </button>
-    <button type="button" onclick="switchTab('reports')" id="tab-reports" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-print text-indigo-600"></i> REPORTS & PRINT
-    </button>
-    <button type="button" onclick="switchTab('audit-logs')" id="tab-audit-logs" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> AUDIT LOGS
-    </button>
-    <button type="button" onclick="switchTab('user-mgmt')" id="tab-user-mgmt" class="tab-btn py-3.5 px-2 text-slate-500 hover:text-slate-700 flex items-center gap-2 cursor-pointer">
-      <i class="fa-solid fa-users-gear text-purple-600"></i> USER MANAGEMENT
-    </button>
+  <!-- ================= SUB NAVIGATION TABS ================= -->
+  <nav class="bg-white border-b border-slate-200 px-6 shadow-sm overflow-x-auto">
+    <div class="flex items-center space-x-1 min-w-max">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab px-4 py-3 text-xs font-bold text-slate-600 hover:text-emerald-700 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-chart-line"></i> DASHBOARD
+      </button>
+      <button onclick="switchTab('raw-materials')" id="tab-raw-materials" class="nav-tab active px-4 py-3 text-xs font-bold text-emerald-700 border-b-2 border-emerald-600 flex items-center gap-2 transition">
+        <i class="fa-solid fa-cubes-stacked"></i> RAW MATERIAL MASTER
+      </button>
+      <button onclick="switchTab('purchases')" id="tab-purchases" class="nav-tab px-4 py-3 text-xs font-bold text-slate-600 hover:text-emerald-700 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-cart-shopping"></i> PURCHASE ENTRY
+      </button>
+      <button onclick="switchTab('products')" id="tab-products" class="nav-tab px-4 py-3 text-xs font-bold text-slate-600 hover:text-emerald-700 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-shirt"></i> PRODUCT MASTER
+      </button>
+      <button onclick="switchTab('sales')" id="tab-sales" class="nav-tab px-4 py-3 text-xs font-bold text-slate-600 hover:text-emerald-700 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-receipt"></i> SALES ENTRY
+      </button>
+      <button onclick="switchTab('audit-logs')" id="tab-audit-logs" class="nav-tab px-4 py-3 text-xs font-bold text-slate-600 hover:text-emerald-700 border-b-2 border-transparent flex items-center gap-2 transition">
+        <i class="fa-solid fa-clock-rotate-left"></i> AUDIT LOGS
+      </button>
+    </div>
   </nav>
 
-  <!-- Main Workspace -->
-  <main class="p-6 max-w-[1600px] w-full mx-auto flex-1 space-y-6">
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="p-6 max-w-[1700px] w-full mx-auto flex-1 space-y-6">
 
-    <!-- TAB 0: DASHBOARD -->
-    <section id="sec-dashboard" class="space-y-6 block">
+    <!-- 1. RAW MATERIAL MASTER TAB -->
+    <section id="pane-raw-materials" class="tab-pane space-y-6">
+      
+      <!-- New Entry Form -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-circle-plus text-emerald-600"></i> Add New Raw Material Master
+        </h3>
+        <form onsubmit="handleSaveRawMaterial(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-xs font-medium">
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">RM CODE *</label>
+            <input type="text" id="rm-code" required placeholder="E.G. RM-FAB-01" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 uppercase" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">CATEGORY</label>
+            <input type="text" id="rm-category" placeholder="Fabric, Trims, Pulses, etc." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">UNIT *</label>
+            <input type="text" id="rm-unit" required placeholder="Meters, Pcs, Kg" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600 uppercase" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">SUPPLIER</label>
+            <input type="text" id="rm-supplier" placeholder="Supplier Name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">RAW MATERIAL NAME *</label>
+            <input type="text" id="rm-name" required placeholder="Full descriptive name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">PURCHASE RATE PER UNIT</label>
+            <input type="number" step="0.01" id="rm-rate" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">GST %</label>
+            <input type="number" id="rm-gst" value="5" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">OPENING STOCK</label>
+            <input type="number" id="rm-opening-stock" value="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">REORDER LEVEL</label>
+            <input type="number" id="rm-reorder" value="10" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">LOCATION</label>
+            <input type="text" id="rm-location" placeholder="Rack / Shelf" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-bold uppercase tracking-wider mb-1">BATCH NO.</label>
+            <input type="text" id="rm-batch" placeholder="Batch / Lot #" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+          </div>
+          <div class="sm:col-span-2 md:col-span-3 lg:col-span-6 pt-2">
+            <button type="submit" class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg shadow transition cursor-pointer flex items-center gap-2">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Save to Master (Cloud DB)
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Master Sheet Table with Export -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Raw Material Master Sheet</h3>
+            <p class="text-[11px] text-slate-500">Live operational ledger of registered materials and stock values.</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportMasterSheet('Raw Material Master', appData.rawMaterials, 'Raw_Materials')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full" id="rm-count-badge">0 Items</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase tracking-wider text-[11px] font-bold">
+              <tr>
+                <th class="p-3.5">ENTRY DATE & TIME</th>
+                <th class="p-3.5">RM CODE</th>
+                <th class="p-3.5">CATEGORY</th>
+                <th class="p-3.5">UNIT</th>
+                <th class="p-3.5">SUPPLIER</th>
+                <th class="p-3.5">RAW MATERIAL NAME</th>
+                <th class="p-3.5">RATE / UNIT</th>
+                <th class="p-3.5">GST %</th>
+                <th class="p-3.5">OPENING STOCK</th>
+                <th class="p-3.5 bg-emerald-50 text-emerald-900">CURRENT STOCK</th>
+                <th class="p-3.5">REORDER LEVEL</th>
+                <th class="p-3.5">LOCATION</th>
+              </tr>
+            </thead>
+            <tbody id="rm-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td colspan="12" class="p-8 text-center text-slate-400">Loading master records from database...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. PURCHASE ENTRY TAB -->
+    <section id="pane-purchases" class="tab-pane hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-cart-plus text-emerald-600"></i> New Purchase Inward Entry
+        </h3>
+        <p class="text-xs text-slate-500">Record incoming raw materials and update inventory stock counts.</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Purchase Entry Ledger</h3>
+            <p class="text-[11px] text-slate-500">Inward invoices, purchase quantities, and billing records.</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportMasterSheet('Purchase Entry', appData.purchases, 'Purchases')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full" id="purchase-count-badge">0 Inward</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase tracking-wider text-[11px] font-bold">
+              <tr>
+                <th class="p-3.5">DATE</th>
+                <th class="p-3.5">INVOICE NO.</th>
+                <th class="p-3.5">SUPPLIER</th>
+                <th class="p-3.5">RM CODE</th>
+                <th class="p-3.5">QTY</th>
+                <th class="p-3.5">RATE</th>
+                <th class="p-3.5">GST AMOUNT</th>
+                <th class="p-3.5 font-bold text-slate-900">NET TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="purchases-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td colspan="8" class="p-8 text-center text-slate-400">No purchase transactions found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PRODUCT MASTER TAB -->
+    <section id="pane-products" class="tab-pane hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Finished Product Master Sheet</h3>
+            <p class="text-[11px] text-slate-500">Catalog of finished products, SKUs, standard costs, and sale rates.</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportMasterSheet('Product Master', appData.products, 'Products')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full" id="product-count-badge">0 Products</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase tracking-wider text-[11px] font-bold">
+              <tr>
+                <th class="p-3.5">SKU / CODE</th>
+                <th class="p-3.5">PRODUCT NAME</th>
+                <th class="p-3.5">CATEGORY</th>
+                <th class="p-3.5">UNIT</th>
+                <th class="p-3.5">SALE RATE</th>
+                <th class="p-3.5 bg-emerald-50 text-emerald-900">CURRENT STOCK</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400">No product records found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. SALES ENTRY TAB -->
+    <section id="pane-sales" class="tab-pane hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Sales Invoices & Outward Entry Sheet</h3>
+            <p class="text-[11px] text-slate-500">Live outbound dispatches, client billing, and revenue registry.</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="exportMasterSheet('Sales Entry', appData.sales, 'Sales')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+              <i class="fa-solid fa-file-excel"></i> Export Excel/CSV
+            </button>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full" id="sales-count-badge">0 Sales</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase tracking-wider text-[11px] font-bold">
+              <tr>
+                <th class="p-3.5">DATE</th>
+                <th class="p-3.5">INVOICE NO.</th>
+                <th class="p-3.5">CUSTOMER NAME</th>
+                <th class="p-3.5">PRODUCT CODE</th>
+                <th class="p-3.5">QTY</th>
+                <th class="p-3.5">UNIT RATE</th>
+                <th class="p-3.5 font-bold text-slate-900">GRAND TOTAL</th>
+              </tr>
+            </thead>
+            <tbody id="sales-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400">No sales transactions logged.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. AUDIT LOGS TAB -->
+    <section id="pane-audit-logs" class="tab-pane hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-shield text-amber-500"></i> Enterprise Activity & Change Ledger
+            </h3>
+            <p class="text-[11px] text-slate-500">Real-time record of all system entries, modifications, and spreadsheet exports.</p>
+          </div>
+          <span class="text-xs bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full">
+            <i class="fa-solid fa-clock-rotate-left mr-1"></i> 90-Day Retention Policy
+          </span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase tracking-wider text-[11px] font-bold">
+              <tr>
+                <th class="p-3.5">SYSTEM ENTRY TIMESTAMP</th>
+                <th class="p-3.5">MODULE</th>
+                <th class="p-3.5">ACTION TYPE</th>
+                <th class="p-3.5">ITEM IDENTIFIER / CODE</th>
+                <th class="p-3.5">TRANSACTION DETAILS</th>
+                <th class="p-3.5">PERFORMED BY</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+              <tr>
+                <td colspan="6" class="p-8 text-center text-slate-400">Loading audit history...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. DASHBOARD OVERVIEW TAB -->
+    <section id="pane-dashboard" class="tab-pane hidden space-y-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Sales Revenue</p>
-            <h3 id="dash-total-sales" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
-            <p id="dash-sales-count" class="text-[11px] text-emerald-600 font-medium mt-1">0 Invoices generated</p>
-          </div>
-          <div class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-            <i class="fa-solid fa-sack-dollar"></i>
-          </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-slate-500 uppercase">Total Raw Materials</p>
+          <h4 id="dash-rm-count" class="text-2xl font-black text-slate-800 mt-1">0</h4>
         </div>
-
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Purchases (RM)</p>
-            <h3 id="dash-total-purchase" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
-            <p id="dash-pur-count" class="text-[11px] text-slate-500 font-medium mt-1">0 Inward Shipments</p>
-          </div>
-          <div class="h-12 w-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
-            <i class="fa-solid fa-truck-ramp-box"></i>
-          </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-slate-500 uppercase">Finished Products</p>
+          <h4 id="dash-prod-count" class="text-2xl font-black text-slate-800 mt-1">0</h4>
         </div>
-
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Profit / (Loss)</p>
-            <h3 id="dash-profit-loss" class="text-2xl font-black text-slate-800 mt-1">₹ 0.00</h3>
-            <p id="dash-profit-margin" class="text-[11px] font-bold text-slate-600 mt-1">Margin: 0.0%</p>
-          </div>
-          <div id="dash-profit-icon-box" class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-            <i class="fa-solid fa-arrow-trend-up"></i>
-          </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-slate-500 uppercase">Total Purchases</p>
+          <h4 id="dash-purchase-count" class="text-2xl font-black text-slate-800 mt-1">0</h4>
         </div>
-
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock Valuation (RM + FG)</p>
-            <h3 id="dash-total-valuation" class="text-2xl font-black text-slate-900 mt-1">₹ 0.00</h3>
-            <p id="dash-lowstock-count" class="text-[11px] text-rose-600 font-semibold mt-1">0 Items need reorder</p>
-          </div>
-          <div class="h-12 w-12 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center text-xl">
-            <i class="fa-solid fa-warehouse"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <div class="flex justify-between items-center pb-3 mb-3 border-b">
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Low Stock & Reorder Monitor
-            </h3>
-            <span class="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-semibold">Priority Action</span>
-          </div>
-          <div class="overflow-x-auto flex-1">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
-                <tr>
-                  <th class="p-2.5">Type</th>
-                  <th class="p-2.5">Code</th>
-                  <th class="p-2.5">Name</th>
-                  <th class="p-2.5 text-center">Current</th>
-                  <th class="p-2.5 text-center">Reorder Lvl</th>
-                  <th class="p-2.5 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody id="dash-lowstock-tbody" class="divide-y text-slate-700"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <div class="flex justify-between items-center pb-3 mb-3 border-b">
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Recent Sales & Margins
-            </h3>
-            <span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">Live Feed</span>
-          </div>
-          <div class="overflow-x-auto flex-1">
-            <table class="w-full text-xs text-left">
-              <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
-                <tr>
-                  <th class="p-2.5">Customer</th>
-                  <th class="p-2.5">Product</th>
-                  <th class="p-2.5 text-center">Qty</th>
-                  <th class="p-2.5">Revenue</th>
-                  <th class="p-2.5 text-right">Gross Profit</th>
-                </tr>
-              </thead>
-              <tbody id="dash-recentsales-tbody" class="divide-y text-slate-700"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 1: RAW MATERIAL MASTER -->
-    <section id="sec-rm-master" class="space-y-5 hidden">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
-          <i class="fa-solid fa-plus-circle text-emerald-600"></i> Add New Raw Material Master
-        </h2>
-        <form id="rmForm" onsubmit="saveRawMaterial(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
-          <div>
-            <label class="font-semibold text-slate-600">RM CODE *</label>
-            <input required id="rm_code" placeholder="e.g. RM-FAB-01" class="mt-1 w-full border p-2 rounded uppercase font-mono">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">CATEGORY</label>
-            <input id="rm_category" placeholder="Fabric, Trims, etc." class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">UNIT *</label>
-            <input required id="rm_unit" placeholder="Meters, Pcs, Kg" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SUPPLIER</label>
-            <input id="rm_supplier" placeholder="Supplier Name" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">RAW MATERIAL NAME *</label>
-            <input required id="rm_name" placeholder="Full descriptive name" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">PURCHASE RATE PER UNIT</label>
-            <input type="number" step="0.01" id="rm_rate" value="0" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">GST %</label>
-            <input type="number" step="0.1" id="rm_gst" value="5" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">OPENING STOCK</label>
-            <input type="number" step="0.01" id="rm_opening" value="0" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">REORDER LEVEL</label>
-            <input type="number" step="0.01" id="rm_reorder" value="10" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">LOCATION</label>
-            <input id="rm_location" placeholder="Rack / Shelf" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">BATCH NO.</label>
-            <input id="rm_batch" placeholder="Batch / Lot #" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">PURCHASE DATE</label>
-            <input type="date" id="rm_pdate" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">EXPIRY DATE</label>
-            <input type="date" id="rm_edate" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="flex items-end sm:col-span-2">
-            <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
-              Save to Master (Cloud DB)
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800 text-sm">Raw Material Master Sheet</h3>
-          <span id="rm-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Items</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">ENTRY DATE & TIME</th>
-                <th class="p-3">RM CODE</th>
-                <th class="p-3">CATEGORY</th>
-                <th class="p-3">UNIT</th>
-                <th class="p-3">SUPPLIER</th>
-                <th class="p-3">RAW MATERIAL NAME</th>
-                <th class="p-3">RATE / UNIT</th>
-                <th class="p-3">GST %</th>
-                <th class="p-3">OPENING STOK</th>
-                <th class="p-3 bg-emerald-50 text-emerald-900 font-bold">CURRENT STOK</th>
-                <th class="p-3">REORDER LEVEL</th>
-                <th class="p-3">LOCATION</th>
-                <th class="p-3">BATCH NO.</th>
-                <th class="p-3">PURCHASE DATE</th>
-                <th class="p-3">EXPIRY DATE</th>
-                <th class="p-3">LOGGED BY</th>
-                <th class="p-3">STATUS</th>
-                <th class="p-3 text-center action-col">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="rm-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: PURCHASE ENTRY -->
-    <section id="sec-purchase-entry" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
-          <i class="fa-solid fa-cart-flatbed text-emerald-600"></i> New Raw Material Purchase Entry
-        </h2>
-        <form id="purchaseForm" onsubmit="savePurchase(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
-          <div>
-            <label class="font-semibold text-slate-600">RM CODE (LOOKUP) *</label>
-            <select required id="pur_rm_code" onchange="autoFillRmPurchase()" class="mt-1 w-full border p-2 rounded bg-slate-50 font-mono font-medium">
-              <option value="">-- Select RM Code --</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">RAW MATERIAL NAME (AUTO)</label>
-            <input readonly id="pur_rm_name" class="mt-1 w-full border p-2 rounded bg-slate-100 font-medium">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SUPPLIER</label>
-            <input required id="pur_supplier" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">UNIT (AUTO)</label>
-            <input readonly id="pur_unit" class="mt-1 w-full border p-2 rounded bg-slate-100">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">QUANTITY *</label>
-            <input required type="number" step="0.01" id="pur_qty" oninput="calcPurTotal()" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">PURCHASE RATE</label>
-            <input required type="number" step="0.01" id="pur_rate" oninput="calcPurTotal()" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">GST %</label>
-            <input type="number" step="0.1" id="pur_gst" oninput="calcPurTotal()" value="5" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">TOTAL AMOUNT (INCL. GST)</label>
-            <input readonly id="pur_total" class="mt-1 w-full border p-2 rounded bg-slate-100 font-bold text-emerald-700">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">BATCH NO.</label>
-            <input id="pur_batch" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">PURCHASE DATE</label>
-            <input type="date" id="pur_pdate" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">EXPIRY DATE</label>
-            <input type="date" id="pur_edate" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">REMARKS</label>
-            <input id="pur_remarks" placeholder="Invoice details, remarks, etc." class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="flex items-end sm:col-span-2">
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
-              Log Purchase & Update Cloud DB
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800 text-sm">Purchase Entry Register</h3>
-          <span id="purchase-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Entries</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">ENTRY DATE & TIME</th>
-                <th class="p-3">SUPPLIER</th>
-                <th class="p-3">RM CODE</th>
-                <th class="p-3">RAW MATERIAL NAME</th>
-                <th class="p-3">QUANTITY</th>
-                <th class="p-3">UNIT</th>
-                <th class="p-3">PURCHASE RATE</th>
-                <th class="p-3">GST %</th>
-                <th class="p-3 font-bold text-slate-800">TOTAL AMOUNT</th>
-                <th class="p-3">BATCH NO.</th>
-                <th class="p-3">PURCHASE DATE</th>
-                <th class="p-3">LOGGED BY</th>
-                <th class="p-3">REMARKS</th>
-                <th class="p-3 text-center action-col">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="purchase-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 3: PRODUCT MASTER -->
-    <section id="sec-product-master" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
-          <i class="fa-solid fa-tag text-emerald-600"></i> Add Finished Product Master
-        </h2>
-        <form id="prodForm" onsubmit="saveProduct(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
-          <div>
-            <label class="font-semibold text-slate-600">PRODUCT CODE *</label>
-            <input required id="prd_code" placeholder="e.g. FG-TSHIRT-01" class="mt-1 w-full border p-2 rounded uppercase font-mono">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">CATEGORY</label>
-            <input id="prd_category" placeholder="Apparel, Formal, etc." class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">UNIT *</label>
-            <input required id="prd_unit" placeholder="Pcs, Box, Set" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">PRODUCT NAME *</label>
-            <input required id="prd_name" placeholder="Full finished item name" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SELLING RATE PER UNIT</label>
-            <input type="number" step="0.01" id="prd_rate" value="0" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">GST %</label>
-            <input type="number" step="0.1" id="prd_gst" value="12" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">OPENING STOCK</label>
-            <input type="number" step="1" id="prd_opening" value="0" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">REORDER LEVEL</label>
-            <input type="number" step="1" id="prd_reorder" value="5" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">LOCATION</label>
-            <input id="prd_location" placeholder="Warehouse Bay" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="flex items-end sm:col-span-2">
-            <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
-              Save Product to DB
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800 text-sm">Product Master Sheet</h3>
-          <span id="product-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Products</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">ENTRY DATE & TIME</th>
-                <th class="p-3">PRODUCT CODE</th>
-                <th class="p-3">CATEGORY</th>
-                <th class="p-3">UNIT</th>
-                <th class="p-3">PRODUCT NAME</th>
-                <th class="p-3">SELLING RATE</th>
-                <th class="p-3">GST %</th>
-                <th class="p-3">OPENING STOK</th>
-                <th class="p-3 bg-emerald-50 text-emerald-900 font-bold">CURRENT STOK</th>
-                <th class="p-3">REORDER LEVEL</th>
-                <th class="p-3">LOCATION</th>
-                <th class="p-3">LOGGED BY</th>
-                <th class="p-3">STATUS</th>
-                <th class="p-3 text-center action-col">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="prd-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: SALES ENTRY -->
-    <section id="sec-sales-entry" class="hidden space-y-5">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
-          <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i> New Sales Entry (Dispatches Finished Goods)
-        </h2>
-        <form id="salesForm" onsubmit="saveSale(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
-          <div>
-            <label class="font-semibold text-slate-600">PRODUCT CODE (LOOKUP) *</label>
-            <select required id="sale_prd_code" onchange="autoFillProductSale()" class="mt-1 w-full border p-2 rounded bg-slate-50 font-mono font-medium">
-              <option value="">-- Select Product --</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">PRODUCT NAME (AUTO)</label>
-            <input readonly id="sale_prd_name" class="mt-1 w-full border p-2 rounded bg-slate-100 font-medium">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">CUSTOMER NAME *</label>
-            <input required id="sale_customer" placeholder="Client / Retailer" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">UNIT (AUTO)</label>
-            <input readonly id="sale_unit" class="mt-1 w-full border p-2 rounded bg-slate-100">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">QUANTITY SOLD *</label>
-            <input required type="number" step="1" min="1" id="sale_qty" oninput="calcSaleTotal()" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SELLING RATE (PER UNIT)</label>
-            <input required type="number" step="0.01" id="sale_rate" oninput="calcSaleTotal()" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">GST %</label>
-            <input type="number" step="0.1" id="sale_gst" oninput="calcSaleTotal()" value="12" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">TOTAL SALE AMOUNT</label>
-            <input readonly id="sale_total" class="mt-1 w-full border p-2 rounded bg-slate-100 font-bold text-emerald-700">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SALE DATE</label>
-            <input type="date" id="sale_date" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">REMARKS</label>
-            <input id="sale_remarks" placeholder="Invoice #, Dispatch note, etc." class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="flex items-end sm:col-span-2">
-            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded text-sm transition cursor-pointer">
-              Record Sale & Dispatch
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800 text-sm">Sales & Revenue Register</h3>
-          <span id="sales-count-badge" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded">0 Invoices</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">ENTRY DATE & TIME</th>
-                <th class="p-3">SALE DATE</th>
-                <th class="p-3">CUSTOMER</th>
-                <th class="p-3">PRODUCT CODE</th>
-                <th class="p-3">PRODUCT NAME</th>
-                <th class="p-3 text-center">QTY</th>
-                <th class="p-3">RATE</th>
-                <th class="p-3">GST %</th>
-                <th class="p-3 font-bold text-slate-900">TOTAL SALE</th>
-                <th class="p-3 text-right text-emerald-700 font-bold">GROSS PROFIT</th>
-                <th class="p-3">LOGGED BY</th>
-                <th class="p-3">REMARKS</th>
-                <th class="p-3 text-center action-col">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="sales-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 5: REPORTS & PRINT GENERATOR -->
-    <section id="sec-reports" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm no-print">
-        <div class="flex flex-wrap justify-between items-center gap-4">
-          <div>
-            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <i class="fa-solid fa-file-invoice text-emerald-600"></i> LZebra Statement & Report Generator
-            </h2>
-            <p class="text-xs text-slate-500 mt-0.5">Filter by statement type and fiscal year, then print or export to PDF.</p>
-          </div>
-          
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="text-[11px] font-semibold text-slate-500 uppercase block mb-1">Report Type</label>
-              <select id="report_type" onchange="generateReport()" class="border p-2 rounded text-xs bg-slate-50 font-medium">
-                <option value="summary">Executive P&L Summary (All Years / Annual)</option>
-                <option value="sales">Detailed Sales Report</option>
-                <option value="purchase">Detailed Purchase Report</option>
-                <option value="inventory">Comprehensive Inventory Valuation Statement</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="text-[11px] font-semibold text-slate-500 uppercase block mb-1">Filter Year</label>
-              <select id="report_year" onchange="generateReport()" class="border p-2 rounded text-xs bg-slate-50 font-medium">
-                <option value="ALL">All Available Years</option>
-                <option value="2026" selected>Year 2026</option>
-                <option value="2025">Year 2025</option>
-                <option value="2027">Year 2027</option>
-              </select>
-            </div>
-
-            <div class="pt-5">
-              <button type="button" onclick="window.print()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer transition">
-                <i class="fa-solid fa-print"></i> Print Statement / Save PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="print-canvas" class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm"></div>
-    </section>
-
-    <!-- TAB 6: AUDIT & ACTIVITY LOGS -->
-    <section id="sec-audit-logs" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <div class="flex flex-wrap justify-between items-center gap-4 pb-3 mb-4 border-b">
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-md font-bold text-slate-800 flex items-center gap-2">
-                <i class="fa-solid fa-shield-halved text-amber-600"></i> Enterprise Activity & Change Ledger
-              </h2>
-              <span class="text-[10px] bg-amber-50 text-amber-800 font-bold px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
-                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> 90-Day Retention Policy
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 mt-1">
-              Real-time record of all system entries, modifications, and deletions.
-            </p>
-          </div>
-          
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Filter by Module</label>
-              <select id="log_filter_module" onchange="renderAuditLogs()" class="border p-1.5 rounded text-xs bg-slate-50 font-medium">
-                <option value="ALL">All Operational Modules</option>
-                <option value="Raw Materials">Raw Material Master</option>
-                <option value="Purchases">Purchase Inward</option>
-                <option value="Products">Product Master</option>
-                <option value="Sales">Sales Register</option>
-                <option value="User Management">User & RBAC Management</option>
-                <option value="Security Shield">Security Shield & Breaches</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">Search User / Identifier</label>
-              <input id="log_search_user" oninput="renderAuditLogs()" placeholder="Search..." class="border p-1.5 rounded text-xs bg-slate-50">
-            </div>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">SYSTEM ENTRY TIMESTAMP</th>
-                <th class="p-3">MODULE</th>
-                <th class="p-3">ACTION TYPE</th>
-                <th class="p-3">ITEM IDENTIFIER / CODE</th>
-                <th class="p-3">TRANSACTION DETAILS</th>
-                <th class="p-3">PERFORMED BY</th>
-              </tr>
-            </thead>
-            <tbody id="audit-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 7: USER MANAGEMENT -->
-    <section id="sec-user-mgmt" class="hidden space-y-6">
-      <div class="bg-white p-5 rounded-lg border shadow-sm">
-        <h2 class="text-md font-bold text-slate-800 mb-4 pb-2 border-b flex items-center gap-2">
-          <i class="fa-solid fa-user-plus text-purple-600"></i> Register New User Account with Security Question
-        </h2>
-        <form id="userForm" onsubmit="saveUserAccount(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
-          <div>
-            <label class="font-semibold text-slate-600">USERNAME *</label>
-            <input required id="usr_username" placeholder="e.g. rohit, emp02" class="mt-1 w-full border p-2 rounded lowercase font-mono">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">INITIAL PASSWORD *</label>
-            <input required type="password" id="usr_password" placeholder="Min 6 chars" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">FULL NAME *</label>
-            <input required id="usr_fullname" placeholder="Full Name" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">MOBILE NUMBER *</label>
-            <input required id="usr_phone" placeholder="10-digit number" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SECURITY QUESTION *</label>
-            <select required id="usr_sec_question" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-              <option value="What was the name of your first school?">What was the name of your first school?</option>
-              <option value="What is your favorite color?">What is your favorite color?</option>
-              <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
-              <option value="What was your first car or bike model?">What was your first car or bike model?</option>
-              <option value="What is the name of your hometown?">What is the name of your hometown?</option>
-            </select>
-          </div>
-          <div>
-            <label class="font-semibold text-slate-600">SECRET ANSWER *</label>
-            <input required id="usr_sec_answer" placeholder="Secret Answer" class="mt-1 w-full border p-2 rounded">
-          </div>
-          <div class="sm:col-span-2">
-            <label class="font-semibold text-slate-600">ROLE / ACCESS LEVEL *</label>
-            <select required id="usr_role" class="mt-1 w-full border p-2 rounded bg-slate-50 font-medium">
-              <option value="super_user">Super Users (Dashboard, Entry & Reports)</option>
-              <option value="user">Users (Entry Tabs Only)</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2 lg:col-span-4 flex items-end">
-            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded text-sm transition cursor-pointer">
-              Create User Account (Cloud DB)
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-          <h3 class="font-bold text-slate-800 text-sm">Registered Accounts & RBAC Directory</h3>
-          <span id="user-count-badge" class="text-xs bg-purple-100 text-purple-800 font-semibold px-2.5 py-0.5 rounded">0 Users</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left whitespace-nowrap">
-            <thead class="bg-slate-100 text-slate-600 border-b">
-              <tr>
-                <th class="p-3">USERNAME</th>
-                <th class="p-3">FULL NAME</th>
-                <th class="p-3">MOBILE</th>
-                <th class="p-3">ROLE</th>
-                <th class="p-3">SECURITY QUESTION</th>
-                <th class="p-3 text-center action-col">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="user-tbody" class="divide-y text-slate-700"></tbody>
-          </table>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs font-bold text-slate-500 uppercase">Total Sales Invoices</p>
+          <h4 id="dash-sales-count" class="text-2xl font-black text-slate-800 mt-1">0</h4>
         </div>
       </div>
     </section>
 
   </main>
 
+  <!-- ================= LOGIC & RPC INTEGRATION ================= -->
   <script>
-    // --- 1. CONFIGURATION & STATE ---
     const SUPABASE_BASE_URL = "https://omjaphworrcapzuaolnb.supabase.co";
     const SUPABASE_KEY = "sb_publishable_RX47vgSxAaVshpc9Oy1OSA_-JNS1HVe";
 
-    let SESSION_TOKEN = localStorage.getItem('LZEBRA_SESSION_TOKEN') || null;
-    let CURRENT_USER = JSON.parse(localStorage.getItem('LZEBRA_AUTH_USER')) || null;
-    let DB = { rawMaterials: [], purchases: [], products: [], sales: [], users: [], logs: [] };
-    let RESET_STATE = { username: null };
+    // Application state memory
+    let appData = {
+      rawMaterials: [],
+      purchases: [],
+      products: [],
+      sales: [],
+      logs: []
+    };
 
     function getHeaders() {
       return {
@@ -931,1102 +422,344 @@
       return isNaN(d.getTime()) ? '-' : d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
     }
 
-    // --- 2. AUTHENTICATION ---
-    window.handleLogin = async function(e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById('login_username').value.trim().toLowerCase();
-      const passwordInput = document.getElementById('login_password').value.trim();
-      const errBox = document.getElementById('login-err');
-      const btn = document.getElementById('btn-login');
+    // --- TAB SWITCHER ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('active', 'text-emerald-700', 'border-emerald-600');
+        el.classList.add('text-slate-600', 'border-transparent');
+      });
 
-      errBox.classList.add('hidden');
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Authenticating...`;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/authenticate_erp_user`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_username: usernameInput,
-            p_password: passwordInput
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Invalid Username or Password.");
-        }
-
-        const authData = await res.json();
-        SESSION_TOKEN = authData.token;
-        CURRENT_USER = {
-          username: authData.username,
-          fullName: authData.full_name,
-          phone: authData.phone,
-          role: authData.role
-        };
-
-        localStorage.setItem('LZEBRA_SESSION_TOKEN', SESSION_TOKEN);
-        localStorage.setItem('LZEBRA_AUTH_USER', JSON.stringify(CURRENT_USER));
-        localStorage.setItem('LZEBRA_REMEMBERED_USERNAME', authData.username);
-
-        document.getElementById('login_password').value = '';
-        applyUserSession();
-        await loadDataFromDb();
-      } catch (err) {
-        errBox.textContent = err.message || "Failed to sign in. Verify credentials.";
-        errBox.classList.remove('hidden');
-      } finally {
-        btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Secure Sign In`;
-      }
-    };
-
-    window.handleLogout = async function() {
-      if (SESSION_TOKEN) {
-        try {
-          await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/logout_erp_user`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ p_token: SESSION_TOKEN })
-          });
-        } catch (e) {
-          console.warn("Logout RPC failed:", e);
-        }
-      }
-      
-      localStorage.removeItem('LZEBRA_SESSION_TOKEN');
-      localStorage.removeItem('LZEBRA_AUTH_USER');
-      SESSION_TOKEN = null;
-      CURRENT_USER = null;
-
-      const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME') || '';
-      document.getElementById('login-modal').classList.remove('hidden');
-      document.getElementById('user-display').textContent = "Not Signed In";
-      document.getElementById('role-badge').textContent = "GUEST";
-      document.getElementById('login_username').value = rememberedUser;
-      document.getElementById('login_password').value = '';
-    };
-
-    // --- 3. ROLE-BASED ACCESS CONTROL ---
-    function applyUserSession() {
-      if (!CURRENT_USER || !SESSION_TOKEN) {
-        document.getElementById('login-modal').classList.remove('hidden');
-        return;
-      }
-
-      document.getElementById('login-modal').classList.add('hidden');
-      document.getElementById('user-display').textContent = CURRENT_USER.fullName;
-      
-      const roleBadge = document.getElementById('role-badge');
-      const userMgmtTab = document.getElementById('tab-user-mgmt');
-      const auditLogsTab = document.getElementById('tab-audit-logs');
-      const dashTab = document.getElementById('tab-dashboard');
-      const reportsTab = document.getElementById('tab-reports');
-
-      const isAdministrator = (CURRENT_USER.role === 'admin' || CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
-      const isSuperUser = (CURRENT_USER.role === 'super_user');
-
-      if (isAdministrator) {
-        roleBadge.textContent = "ADMINISTRATOR";
-        roleBadge.className = "text-[10px] bg-purple-950 text-purple-300 font-mono px-2 py-0.5 rounded border border-purple-800 uppercase";
-        
-        dashTab.classList.remove('hidden');
-        reportsTab.classList.remove('hidden');
-        userMgmtTab.classList.remove('hidden');
-        auditLogsTab.classList.remove('hidden');
-        switchTab('dashboard');
-      } else if (isSuperUser) {
-        roleBadge.textContent = "SUPER USER";
-        roleBadge.className = "text-[10px] bg-blue-950 text-blue-300 font-mono px-2 py-0.5 rounded border border-blue-800 uppercase";
-        
-        dashTab.classList.remove('hidden');
-        reportsTab.classList.remove('hidden');
-        userMgmtTab.classList.add('hidden');
-        auditLogsTab.classList.add('hidden');
-        switchTab('dashboard');
-      } else {
-        roleBadge.textContent = "USER";
-        roleBadge.className = "text-[10px] bg-emerald-950 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-800 uppercase";
-        
-        dashTab.classList.add('hidden');
-        reportsTab.classList.add('hidden');
-        userMgmtTab.classList.add('hidden');
-        auditLogsTab.classList.add('hidden');
-        switchTab('rm-master');
+      const pane = document.getElementById(`pane-${tabId}`);
+      const btn = document.getElementById(`tab-${tabId}`);
+      if (pane) pane.classList.remove('hidden');
+      if (btn) {
+        btn.classList.add('active', 'text-emerald-700', 'border-emerald-600');
+        btn.classList.remove('text-slate-600', 'border-transparent');
       }
     }
 
-    // --- 4. DATA SYNC ---
-    window.loadDataFromDb = async function() {
-      if (!SESSION_TOKEN) return;
-      const statusEl = document.getElementById('db-status');
-      statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
+    // --- AUTH MANAGEMENT ---
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value;
+      const msg = document.getElementById('login-msg');
+
+      msg.className = "mt-4 p-3 rounded-lg text-xs font-semibold text-center bg-slate-100 text-slate-700 block";
+      msg.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> Authenticating...`;
+
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/erp_login`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ p_username: u, p_password: p })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.token) {
+          throw new Error(data.message || 'Invalid username or password');
+        }
+
+        localStorage.setItem('LZEBRA_SESSION_TOKEN', data.token);
+        localStorage.setItem('LZEBRA_USER', JSON.stringify(data.user));
+        document.getElementById('auth-modal').classList.add('hidden');
+        setupUserInterface();
+        fetchAllData();
+      } catch (err) {
+        msg.className = "mt-4 p-3 rounded-lg text-xs font-semibold text-center bg-rose-100 text-rose-700 block";
+        msg.textContent = err.message;
+      }
+    }
+
+    function setupUserInterface() {
+      const userStr = localStorage.getItem('LZEBRA_USER');
+      if (!userStr) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        return;
+      }
+      const user = JSON.parse(userStr);
+      document.getElementById('current-user-display').textContent = user.full_name || user.username;
+      document.getElementById('user-role-badge').textContent = (user.role || 'WORKER').toUpperCase();
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('LZEBRA_SESSION_TOKEN');
+      localStorage.removeItem('LZEBRA_USER');
+      location.reload();
+    }
+
+    // --- UNIVERSAL EXPORT FUNCTION WITH AUDIT TRAIL ---
+    async function exportMasterSheet(moduleName, dataArray, filename) {
+      if (!dataArray || dataArray.length === 0) {
+        alert(`No data available to export for ${moduleName}.`);
+        return;
+      }
+
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+      if (!token) {
+        alert("Session expired. Please sign in again.");
+        document.getElementById('auth-modal').classList.remove('hidden');
+        return;
+      }
+
+      try {
+        // 1. Post to PostgreSQL Audit Logging RPC
+        await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/log_data_export_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            p_token: token,
+            p_module: moduleName,
+            p_row_count: dataArray.length
+          })
+        });
+
+        // 2. Build CSV File
+        const headers = Object.keys(dataArray[0]);
+        const csvRows = [];
+        csvRows.push(headers.map(h => `"${h.toUpperCase().replace(/_/g, ' ')}"`).join(','));
+
+        dataArray.forEach(row => {
+          const values = headers.map(header => {
+            let val = row[header] === null || row[header] === undefined ? '' : row[header];
+            if (typeof val === 'object') val = JSON.stringify(val);
+            return `"${String(val).replace(/"/g, '""')}"`;
+          });
+          csvRows.push(values.join(','));
+        });
+
+        // 3. Initiate Download
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${filename}_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Refresh data to show new audit log entry
+        fetchAllData();
+
+      } catch (err) {
+        console.error("Export error:", err);
+        alert("Export completed with local export error: " + err.message);
+      }
+    }
+
+    // --- FETCH DATA VIA SECURE RPC ---
+    async function fetchAllData() {
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+      if (!token) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        return;
+      }
 
       try {
         const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/fetch_erp_data_secure`, {
           method: 'POST',
           headers: getHeaders(),
-          body: JSON.stringify({ p_token: SESSION_TOKEN })
+          body: JSON.stringify({ p_token: token })
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          if (res.status === 400 || res.status === 401 || (err.message && err.message.includes('Unauthorized'))) {
+          if (res.status === 401 || res.status === 403) {
             handleLogout();
             return;
           }
-          throw new Error(err.message || 'Database Sync Failed');
+          throw new Error('Failed to retrieve ERP dataset');
         }
 
         const data = await res.json();
-        DB.rawMaterials = data.rawMaterials || [];
-        DB.purchases = data.purchases || [];
-        DB.products = data.products || [];
-        DB.sales = data.sales || [];
-        DB.users = data.users || [];
-        DB.logs = data.logs || [];
+        appData.rawMaterials = data.raw_materials || [];
+        appData.purchases = data.purchases || [];
+        appData.products = data.products || [];
+        appData.sales = data.sales || [];
+        appData.logs = data.logs || [];
 
-        if (data.currentUser) {
-          CURRENT_USER = data.currentUser;
-          localStorage.setItem('LZEBRA_AUTH_USER', JSON.stringify(CURRENT_USER));
-        }
+        renderAllTables();
 
-        renderAll();
-        statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-emerald-500"></span> Connected`;
       } catch (err) {
-        console.error("Secure Data Fetch Error:", err);
-        statusEl.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error connecting`;
+        console.error("Error fetching ERP data:", err);
       }
-    };
-
-    function getRmStock(rmCode, openingStock) {
-      const totalPurchased = DB.purchases
-        .filter(p => p.rm_code === rmCode)
-        .reduce((sum, p) => sum + Number(p.qty), 0);
-      return Number(openingStock) + totalPurchased;
     }
 
-    function getProductStock(prodCode, openingStock) {
-      const totalSold = DB.sales
-        .filter(s => s.product_code === prodCode)
-        .reduce((sum, s) => sum + Number(s.qty), 0);
-      return Number(openingStock) - totalSold;
-    }
+    // --- RENDER TABLES ---
+    function renderAllTables() {
+      // 1. Raw Materials
+      const rmTbody = document.getElementById('rm-tbody');
+      document.getElementById('rm-count-badge').textContent = `${appData.rawMaterials.length} Items`;
+      document.getElementById('dash-rm-count').textContent = appData.rawMaterials.length;
 
-    function renderDashboard() {
-      const totalSalesRevenue = DB.sales.reduce((acc, s) => acc + Number(s.total_sale || 0), 0);
-      const totalPurchasesCost = DB.purchases.reduce((acc, p) => acc + Number(p.total || 0), 0);
-      
-      const rmValuation = DB.rawMaterials.reduce((acc, rm) => acc + (getRmStock(rm.code, rm.opening) * Number(rm.rate || 0)), 0);
-      const fgValuation = DB.products.reduce((acc, fg) => acc + (getProductStock(fg.code, fg.opening) * Number(fg.rate || 0)), 0);
-      const totalValuation = rmValuation + fgValuation;
-
-      const recordedGrossProfit = DB.sales.reduce((acc, s) => acc + Number(s.gross_profit || 0), 0);
-      const grossProfit = recordedGrossProfit !== 0 ? recordedGrossProfit : (totalSalesRevenue - (totalSalesRevenue * 0.40));
-      const marginPct = totalSalesRevenue > 0 ? ((grossProfit / totalSalesRevenue) * 100).toFixed(1) : "0.0";
-
-      let lowStockCount = 0;
-      const lowStockItems = [];
-
-      DB.rawMaterials.forEach(rm => {
-        const cur = getRmStock(rm.code, rm.opening);
-        if (cur <= Number(rm.reorder)) {
-          lowStockCount++;
-          lowStockItems.push({ type: 'RM', code: rm.code, name: rm.name, cur, reorder: rm.reorder, unit: rm.unit });
-        }
-      });
-
-      DB.products.forEach(prd => {
-        const cur = getProductStock(prd.code, prd.opening);
-        if (cur <= Number(prd.reorder)) {
-          lowStockCount++;
-          lowStockItems.push({ type: 'FG', code: prd.code, name: prd.name, cur, reorder: prd.reorder, unit: prd.unit });
-        }
-      });
-
-      document.getElementById('dash-total-sales').textContent = `₹ ${totalSalesRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('dash-sales-count').textContent = `${DB.sales.length} Invoices generated`;
-
-      document.getElementById('dash-total-purchase').textContent = `₹ ${totalPurchasesCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('dash-pur-count').textContent = `${DB.purchases.length} Inward Shipments`;
-
-      document.getElementById('dash-profit-loss').textContent = `₹ ${grossProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('dash-profit-margin').textContent = `Gross Margin: ${marginPct}%`;
-      
-      const profitIconBox = document.getElementById('dash-profit-icon-box');
-      if (grossProfit < 0) {
-        profitIconBox.className = "h-12 w-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xl";
-        profitIconBox.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i>`;
+      if (appData.rawMaterials.length === 0) {
+        rmTbody.innerHTML = `<tr><td colspan="12" class="p-8 text-center text-slate-400">No raw materials registered.</td></tr>`;
       } else {
-        profitIconBox.className = "h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl";
-        profitIconBox.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i>`;
-      }
-
-      document.getElementById('dash-total-valuation').textContent = `₹ ${totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('dash-lowstock-count').textContent = `${lowStockCount} Items need reorder`;
-
-      const lowStockTbody = document.getElementById('dash-lowstock-tbody');
-      lowStockTbody.innerHTML = '';
-      if (lowStockItems.length === 0) {
-        lowStockTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-emerald-600 font-semibold">✅ All inventory levels are optimal!</td></tr>`;
-      } else {
-        lowStockItems.forEach(item => {
-          lowStockTbody.innerHTML += `
-            <tr class="hover:bg-slate-50">
-              <td class="p-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${item.type === 'RM' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-800'}">${item.type}</span></td>
-              <td class="p-2.5 font-mono font-bold text-slate-800">${item.code}</td>
-              <td class="p-2.5 font-medium">${item.name}</td>
-              <td class="p-2.5 text-center font-bold text-rose-600">${item.cur} ${item.unit}</td>
-              <td class="p-2.5 text-center text-slate-500">${item.reorder} ${item.unit}</td>
-              <td class="p-2.5 text-center"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">REORDER</span></td>
+        rmTbody.innerHTML = '';
+        appData.rawMaterials.forEach(rm => {
+          rmTbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-3.5 font-mono text-[11px] text-slate-500">${formatTimestamp(rm.created_at)}</td>
+              <td class="p-3.5 font-mono font-bold text-emerald-700">${rm.rm_code || '-'}</td>
+              <td class="p-3.5 uppercase">${rm.category || '-'}</td>
+              <td class="p-3.5 font-bold">${rm.unit || '-'}</td>
+              <td class="p-3.5">${rm.supplier || '-'}</td>
+              <td class="p-3.5 font-bold text-slate-800">${rm.name || '-'}</td>
+              <td class="p-3.5">₹${Number(rm.purchase_rate || 0).toFixed(2)}</td>
+              <td class="p-3.5">${rm.gst_percent || 0}%</td>
+              <td class="p-3.5 font-mono">${rm.opening_stock || 0}</td>
+              <td class="p-3.5 font-mono font-bold text-emerald-800 bg-emerald-50/50">${rm.current_stock || 0}</td>
+              <td class="p-3.5 text-slate-500">${rm.reorder_level || 0}</td>
+              <td class="p-3.5 text-slate-500">${rm.location || '-'}</td>
             </tr>
           `;
         });
       }
 
-      const salesFeedTbody = document.getElementById('dash-recentsales-tbody');
-      salesFeedTbody.innerHTML = '';
-      const recentSales = [...DB.sales].slice(0, 5);
-      if (recentSales.length === 0) {
-        salesFeedTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No sales recorded yet.</td></tr>`;
+      // 2. Purchases
+      const purchaseTbody = document.getElementById('purchases-tbody');
+      document.getElementById('purchase-count-badge').textContent = `${appData.purchases.length} Inward`;
+      document.getElementById('dash-purchase-count').textContent = appData.purchases.length;
+
+      if (appData.purchases.length === 0) {
+        purchaseTbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">No purchase records found.</td></tr>`;
       } else {
-        recentSales.forEach(s => {
-          salesFeedTbody.innerHTML += `
-            <tr class="hover:bg-slate-50">
-              <td class="p-2.5 font-semibold text-slate-800">${s.customer}</td>
-              <td class="p-2.5">${s.name}</td>
-              <td class="p-2.5 text-center font-bold">${s.qty}</td>
-              <td class="p-2.5 font-bold text-emerald-700">₹${Number(s.total_sale).toLocaleString()}</td>
-              <td class="p-2.5 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
+        purchaseTbody.innerHTML = '';
+        appData.purchases.forEach(p => {
+          purchaseTbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-3.5 font-mono text-slate-500">${formatTimestamp(p.created_at)}</td>
+              <td class="p-3.5 font-mono font-bold">${p.invoice_no || '-'}</td>
+              <td class="p-3.5">${p.supplier || '-'}</td>
+              <td class="p-3.5 font-mono text-emerald-700 font-bold">${p.rm_code || '-'}</td>
+              <td class="p-3.5 font-mono">${p.quantity || 0}</td>
+              <td class="p-3.5">₹${Number(p.rate || 0).toFixed(2)}</td>
+              <td class="p-3.5">₹${Number(p.gst_amount || 0).toFixed(2)}</td>
+              <td class="p-3.5 font-bold text-slate-900">₹${Number(p.total_amount || 0).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // 3. Products
+      const prodTbody = document.getElementById('products-tbody');
+      document.getElementById('product-count-badge').textContent = `${appData.products.length} Products`;
+      document.getElementById('dash-prod-count').textContent = appData.products.length;
+
+      if (appData.products.length === 0) {
+        prodTbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No product records found.</td></tr>`;
+      } else {
+        prodTbody.innerHTML = '';
+        appData.products.forEach(pr => {
+          prodTbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-3.5 font-mono font-bold text-indigo-700">${pr.product_code || '-'}</td>
+              <td class="p-3.5 font-bold text-slate-800">${pr.name || '-'}</td>
+              <td class="p-3.5 uppercase">${pr.category || '-'}</td>
+              <td class="p-3.5 font-bold">${pr.unit || '-'}</td>
+              <td class="p-3.5 font-mono">₹${Number(pr.sale_rate || 0).toFixed(2)}</td>
+              <td class="p-3.5 font-mono font-bold text-emerald-800 bg-emerald-50/50">${pr.current_stock || 0}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // 4. Sales
+      const salesTbody = document.getElementById('sales-tbody');
+      document.getElementById('sales-count-badge').textContent = `${appData.sales.length} Sales`;
+      document.getElementById('dash-sales-count').textContent = appData.sales.length;
+
+      if (appData.sales.length === 0) {
+        salesTbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">No sales transactions logged.</td></tr>`;
+      } else {
+        salesTbody.innerHTML = '';
+        appData.sales.forEach(s => {
+          salesTbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-3.5 font-mono text-slate-500">${formatTimestamp(s.created_at)}</td>
+              <td class="p-3.5 font-mono font-bold">${s.invoice_no || '-'}</td>
+              <td class="p-3.5 font-bold text-slate-800">${s.customer_name || '-'}</td>
+              <td class="p-3.5 font-mono text-indigo-700 font-bold">${s.product_code || '-'}</td>
+              <td class="p-3.5 font-mono">${s.quantity || 0}</td>
+              <td class="p-3.5">₹${Number(s.rate || 0).toFixed(2)}</td>
+              <td class="p-3.5 font-bold text-slate-900">₹${Number(s.total_amount || 0).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // 5. Audit Logs
+      const auditTbody = document.getElementById('audit-tbody');
+      if (appData.logs.length === 0) {
+        auditTbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No audit records found.</td></tr>`;
+      } else {
+        auditTbody.innerHTML = '';
+        appData.logs.forEach(l => {
+          const isExport = l.action === 'DATA_EXPORT';
+          auditTbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="p-3.5 font-mono text-[11px] text-slate-500">${formatTimestamp(l.created_at)}</td>
+              <td class="p-3.5 font-bold text-slate-700">${l.module || '-'}</td>
+              <td class="p-3.5">
+                ${isExport 
+                  ? `<span class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded border border-blue-200"><i class="fa-solid fa-file-excel mr-1"></i>EXPORT</span>`
+                  : `<span class="bg-slate-100 text-slate-700 font-bold text-[10px] px-2 py-0.5 rounded border border-slate-200">${l.action || '-'}</span>`
+                }
+              </td>
+              <td class="p-3.5 font-mono font-semibold text-slate-800">${l.record_identifier || '-'}</td>
+              <td class="p-3.5 text-slate-600 max-w-[340px] truncate" title="${l.details || ''}">${l.details || '-'}</td>
+              <td class="p-3.5 font-semibold text-emerald-800">${l.performed_by || '-'}</td>
             </tr>
           `;
         });
       }
     }
 
-    function renderRawMaterials() {
-      const tbody = document.getElementById('rm-tbody');
-      tbody.innerHTML = '';
-      document.getElementById('rm-count-badge').textContent = `${DB.rawMaterials.length} Items`;
-
-      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
-
-      DB.rawMaterials.forEach((rm) => {
-        const currentStock = getRmStock(rm.code, rm.opening);
-        const isReorder = currentStock <= Number(rm.reorder);
-        const statusBadge = isReorder
-          ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">⚠️ REORDER</span>`
-          : `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold text-[10px]">✅ OPTIMAL</span>`;
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(rm.created_at)}</td>
-            <td class="p-3 font-mono font-bold text-emerald-700">${rm.code}</td>
-            <td class="p-3">${rm.category || '-'}</td>
-            <td class="p-3">${rm.unit}</td>
-            <td class="p-3">${rm.supplier || '-'}</td>
-            <td class="p-3 font-medium">${rm.name}</td>
-            <td class="p-3">₹${Number(rm.rate).toFixed(2)}</td>
-            <td class="p-3">${rm.gst}%</td>
-            <td class="p-3">${rm.opening}</td>
-            <td class="p-3 bg-emerald-50 font-bold text-emerald-950">${currentStock}</td>
-            <td class="p-3">${rm.reorder}</td>
-            <td class="p-3">${rm.location || '-'}</td>
-            <td class="p-3">${rm.batch || '-'}</td>
-            <td class="p-3">${rm.pdate || '-'}</td>
-            <td class="p-3">${rm.edate || '-'}</td>
-            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${rm.created_by || 'Admin'}</td>
-            <td class="p-3">${statusBadge}</td>
-            <td class="p-3 text-center action-col">
-              ${isAdministrator ? `
-                <button type="button" onclick="secureDelete('raw_materials', '${rm.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
-              ` : `<span class="text-slate-300 text-xs">-</span>`}
-            </td>
-          </tr>
-        `;
-      });
-
-      const sel = document.getElementById('pur_rm_code');
-      sel.innerHTML = '<option value="">-- Select RM Code --</option>';
-      DB.rawMaterials.forEach(rm => {
-        sel.innerHTML += `<option value="${rm.code}">${rm.code} | ${rm.name}</option>`;
-      });
-    }
-
-    function renderPurchases() {
-      const tbody = document.getElementById('purchase-tbody');
-      tbody.innerHTML = '';
-      document.getElementById('purchase-count-badge').textContent = `${DB.purchases.length} Entries`;
-
-      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
-
-      DB.purchases.forEach((p) => {
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(p.created_at)}</td>
-            <td class="p-3 font-medium">${p.supplier}</td>
-            <td class="p-3 font-mono font-bold text-emerald-700">${p.rm_code}</td>
-            <td class="p-3">${p.name}</td>
-            <td class="p-3 font-semibold text-emerald-700">${p.qty}</td>
-            <td class="p-3">${p.unit}</td>
-            <td class="p-3">₹${Number(p.rate).toFixed(2)}</td>
-            <td class="p-3">${p.gst}%</td>
-            <td class="p-3 font-bold text-slate-900">₹${Number(p.total).toLocaleString()}</td>
-            <td class="p-3">${p.batch || '-'}</td>
-            <td class="p-3">${p.pdate || '-'}</td>
-            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${p.created_by || 'Admin'}</td>
-            <td class="p-3 text-slate-500">${p.remarks || '-'}</td>
-            <td class="p-3 text-center action-col">
-              ${isAdministrator ? `
-                <button type="button" onclick="secureDelete('purchases', '${p.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
-              ` : `<span class="text-slate-300 text-xs">-</span>`}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    function renderProducts() {
-      const tbody = document.getElementById('prd-tbody');
-      tbody.innerHTML = '';
-      document.getElementById('product-count-badge').textContent = `${DB.products.length} Products`;
-
-      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
-
-      DB.products.forEach((prd) => {
-        const curStock = getProductStock(prd.code, prd.opening);
-        const isReorder = curStock <= Number(prd.reorder);
-        const statusBadge = isReorder
-          ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-semibold text-[10px]">⚠️ LOW STOCK</span>`
-          : `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold text-[10px]">✅ IN STOCK</span>`;
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(prd.created_at)}</td>
-            <td class="p-3 font-mono font-bold text-slate-900">${prd.code}</td>
-            <td class="p-3">${prd.category || '-'}</td>
-            <td class="p-3">${prd.unit}</td>
-            <td class="p-3 font-medium">${prd.name}</td>
-            <td class="p-3">₹${Number(prd.rate).toFixed(2)}</td>
-            <td class="p-3">${prd.gst}%</td>
-            <td class="p-3">${prd.opening}</td>
-            <td class="p-3 bg-emerald-50 font-bold text-emerald-950">${curStock}</td>
-            <td class="p-3">${prd.reorder}</td>
-            <td class="p-3">${prd.location || '-'}</td>
-            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${prd.created_by || 'Admin'}</td>
-            <td class="p-3">${statusBadge}</td>
-            <td class="p-3 text-center action-col">
-              ${isAdministrator ? `
-                <button type="button" onclick="secureDelete('products', '${prd.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
-              ` : `<span class="text-slate-300 text-xs">-</span>`}
-            </td>
-          </tr>
-        `;
-      });
-
-      const saleSelect = document.getElementById('sale_prd_code');
-      saleSelect.innerHTML = '<option value="">-- Select Product --</option>';
-      DB.products.forEach(p => {
-        saleSelect.innerHTML += `<option value="${p.code}">${p.code} | ${p.name}</option>`;
-      });
-    }
-
-    function renderSales() {
-      const tbody = document.getElementById('sales-tbody');
-      tbody.innerHTML = '';
-      document.getElementById('sales-count-badge').textContent = `${DB.sales.length} Invoices`;
-
-      const isAdministrator = CURRENT_USER && (CURRENT_USER.username === 'admin' || CURRENT_USER.username === 'malaya');
-
-      DB.sales.forEach((s) => {
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold bg-slate-50/60">${formatTimestamp(s.created_at)}</td>
-            <td class="p-3">${s.sale_date || '-'}</td>
-            <td class="p-3 font-semibold text-slate-800">${s.customer}</td>
-            <td class="p-3 font-mono font-bold text-slate-900">${s.product_code}</td>
-            <td class="p-3">${s.name}</td>
-            <td class="p-3 text-center font-bold">${s.qty} ${s.unit || ''}</td>
-            <td class="p-3">₹${Number(s.selling_rate).toFixed(2)}</td>
-            <td class="p-3">${s.gst}%</td>
-            <td class="p-3 font-bold text-slate-900">₹${Number(s.total_sale).toLocaleString()}</td>
-            <td class="p-3 text-right font-bold text-emerald-600">+₹${Number(s.gross_profit || (s.total_sale * 0.4)).toLocaleString()}</td>
-            <td class="p-3 font-medium text-purple-700"><i class="fa-solid fa-user-tag mr-1 text-[10px]"></i>${s.created_by || 'Admin'}</td>
-            <td class="p-3 text-slate-500">${s.remarks || '-'}</td>
-            <td class="p-3 text-center action-col">
-              ${isAdministrator ? `
-                <button type="button" onclick="secureDelete('sales', '${s.id}')" title="Delete Record" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
-              ` : `<span class="text-slate-300 text-xs">-</span>`}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    function renderAuditLogs() {
-      const tbody = document.getElementById('audit-tbody');
-      tbody.innerHTML = '';
-
-      const filterModule = document.getElementById('log_filter_module')?.value || 'ALL';
-      const searchUser = (document.getElementById('log_search_user')?.value || '').trim().toLowerCase();
-
-      const filteredLogs = DB.logs.filter(log => {
-        const matchesModule = (filterModule === 'ALL' || log.module === filterModule);
-        const matchesUser = (!searchUser || (log.performed_by && log.performed_by.toLowerCase().includes(searchUser)) || (log.record_identifier && log.record_identifier.toLowerCase().includes(searchUser)));
-        return matchesModule && matchesUser;
-      });
-
-      if (filteredLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">No activity log records found.</td></tr>`;
-        return;
-      }
-
-      filteredLogs.forEach(l => {
-        let actionBadge = '';
-        if (l.action === 'CREATE' || l.action === 'LOGIN') {
-          actionBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-plus mr-1"></i>${l.action}</span>`;
-        } else if (l.action === 'UPDATE' || l.action === 'PASSWORD_RESET') {
-          actionBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-pen mr-1"></i>${l.action}</span>`;
-        } else if (l.action === 'SECURITY_ALERT') {
-          actionBadge = `<span class="bg-rose-600 text-white px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-triangle-exclamation mr-1"></i>THREAT</span>`;
-        } else {
-          actionBadge = `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-trash mr-1"></i>${l.action}</span>`;
-        }
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono text-[11px] text-slate-500 font-semibold">${formatTimestamp(l.created_at)}</td>
-            <td class="p-3 font-bold text-slate-800">${l.module}</td>
-            <td class="p-3">${actionBadge}</td>
-            <td class="p-3 font-mono font-bold text-purple-700">${l.record_identifier}</td>
-            <td class="p-3 text-slate-600 font-medium">${l.details}</td>
-            <td class="p-3 font-semibold text-slate-900"><i class="fa-solid fa-user-circle mr-1 text-slate-400"></i>${l.performed_by}</td>
-          </tr>
-        `;
-      });
-    }
-
-    function renderUsers() {
-      const tbody = document.getElementById('user-tbody');
-      tbody.innerHTML = '';
-      document.getElementById('user-count-badge').textContent = `${DB.users.length} Users`;
-
-      DB.users.forEach((u) => {
-        let roleBadge = '';
-        if (u.username === 'admin' || u.username === 'malaya' || u.role === 'admin') {
-          roleBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold text-[10px]">ADMINISTRATOR</span>`;
-        } else if (u.role === 'super_user') {
-          roleBadge = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold text-[10px]">SUPER USER</span>`;
-        } else {
-          roleBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">USER</span>`;
-        }
-
-        const isProtectedRoot = (u.username === 'admin' || u.username === 'malaya');
-
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 font-mono font-bold text-purple-700">${u.username}</td>
-            <td class="p-3 font-semibold text-slate-900">${u.full_name}</td>
-            <td class="p-3 font-mono text-slate-600">${u.phone || '-'}</td>
-            <td class="p-3">${roleBadge}</td>
-            <td class="p-3 text-slate-600 text-xs italic">${u.sec_question || 'What was the name of your first school?'}</td>
-            <td class="p-3 text-center action-col flex items-center justify-center gap-2">
-              <button type="button" onclick="openEditModal('${u.id}')" title="Edit User" class="text-blue-600 hover:text-blue-800 cursor-pointer p-1"><i class="fa-solid fa-pen-to-square"></i></button>
-              ${!isProtectedRoot ? `
-                <button type="button" onclick="secureDelete('erp_users', '${u.id}')" title="Delete User" class="text-rose-500 hover:text-rose-700 cursor-pointer p-1"><i class="fa-solid fa-trash"></i></button>
-              ` : `<span class="text-slate-400 text-xs italic font-semibold">Protected Root</span>`}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    function renderAll() {
-      renderDashboard();
-      renderRawMaterials();
-      renderPurchases();
-      renderProducts();
-      renderSales();
-      renderUsers();
-      renderAuditLogs();
-    }
-
-    // --- 5. USER EDIT & CREATE ---
-    window.openEditModal = function(userId) {
-      const user = DB.users.find(u => u.id === userId);
-      if (!user) return;
-
-      document.getElementById('edit_user_id').value = user.id;
-      document.getElementById('edit_username').value = user.username;
-      document.getElementById('edit_fullname').value = user.full_name || '';
-      document.getElementById('edit_phone').value = user.phone || '';
-      document.getElementById('edit_sec_question').value = user.sec_question || 'What was the name of your first school?';
-      document.getElementById('edit_sec_answer').value = '';
-      document.getElementById('edit_password').value = '';
-
-      const editRoleSel = document.getElementById('edit_role');
-      const optAdmin = document.getElementById('opt_edit_admin');
-
-      if (user.username === 'admin' || user.username === 'malaya') {
-        optAdmin.classList.remove('hidden');
-        editRoleSel.value = 'admin';
-        editRoleSel.disabled = true;
-      } else {
-        optAdmin.classList.add('hidden');
-        editRoleSel.disabled = false;
-        editRoleSel.value = (user.role === 'super_user') ? 'super_user' : 'user';
-      }
-
-      document.getElementById('edit-user-modal').classList.remove('hidden');
-    };
-
-    window.closeEditModal = function() {
-      document.getElementById('edit-user-modal').classList.add('hidden');
-    };
-
-    window.handleUpdateUser = async function(e) {
+    // --- FORM SUBMIT: ADD RAW MATERIAL ---
+    async function handleSaveRawMaterial(e) {
       e.preventDefault();
-      const userId = document.getElementById('edit_user_id').value;
-      const full_name = document.getElementById('edit_fullname').value.trim();
-      const phone = document.getElementById('edit_phone').value.trim();
-      const sec_question = document.getElementById('edit_sec_question').value;
-      const sec_answer = document.getElementById('edit_sec_answer').value.trim();
-      const role = document.getElementById('edit_role').value;
-      const newPassword = document.getElementById('edit_password').value.trim();
+      const token = localStorage.getItem('LZEBRA_SESSION_TOKEN');
+      if (!token) return;
 
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/update_user_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_user_id: userId,
-            p_full_name: full_name,
-            p_phone: phone,
-            p_sec_question: sec_question,
-            p_sec_answer: sec_answer,
-            p_role: role,
-            p_new_password: newPassword
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to update user");
-        }
-
-        alert(`User details updated successfully!`);
-        closeEditModal();
-        loadDataFromDb();
-      } catch (err) {
-        alert("Update Error: " + err.message);
-      }
-    };
-
-    window.saveUserAccount = async function(e) {
-      e.preventDefault();
-      const username = document.getElementById('usr_username').value.trim().toLowerCase();
-      const password = document.getElementById('usr_password').value.trim();
-      const full_name = document.getElementById('usr_fullname').value.trim();
-      const phone = document.getElementById('usr_phone').value.trim();
-      const sec_question = document.getElementById('usr_sec_question').value;
-      const sec_answer = document.getElementById('usr_sec_answer').value.trim();
-      const role = document.getElementById('usr_role').value;
-
-      if (password.length < 6) {
-        alert("Password must be at least 6 characters long.");
-        return;
-      }
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/register_user_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_username: username,
-            p_password: password,
-            p_full_name: full_name,
-            p_phone: phone,
-            p_sec_question: sec_question,
-            p_sec_answer: sec_answer,
-            p_role: role
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to register user");
-        }
-
-        alert(`Account created successfully for ${full_name}!`);
-        document.getElementById('userForm').reset();
-        loadDataFromDb();
-      } catch (err) {
-        alert("Registration Error: " + err.message);
-      }
-    };
-
-    // --- 6. TRANSACTIONS ---
-    window.saveRawMaterial = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('rm_code').value.trim().toUpperCase();
-      const name = document.getElementById('rm_name').value.trim();
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_raw_material_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_code: code,
-            p_category: document.getElementById('rm_category').value,
-            p_unit: document.getElementById('rm_unit').value,
-            p_supplier: document.getElementById('rm_supplier').value,
-            p_name: name,
-            p_rate: parseFloat(document.getElementById('rm_rate').value) || 0,
-            p_gst: parseFloat(document.getElementById('rm_gst').value) || 0,
-            p_opening: parseFloat(document.getElementById('rm_opening').value) || 0,
-            p_reorder: parseFloat(document.getElementById('rm_reorder').value) || 0,
-            p_location: document.getElementById('rm_location').value,
-            p_batch: document.getElementById('rm_batch').value,
-            p_pdate: document.getElementById('rm_pdate').value || null,
-            p_edate: document.getElementById('rm_edate').value || null
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to save raw material");
-        }
-
-        document.getElementById('rmForm').reset();
-        loadDataFromDb();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    window.autoFillRmPurchase = function() {
-      const code = document.getElementById('pur_rm_code').value;
-      const rm = DB.rawMaterials.find(r => r.code === code);
-      if (rm) {
-        document.getElementById('pur_rm_name').value = rm.name;
-        document.getElementById('pur_supplier').value = rm.supplier || '';
-        document.getElementById('pur_unit').value = rm.unit;
-        document.getElementById('pur_rate').value = rm.rate;
-        document.getElementById('pur_gst').value = rm.gst;
-        calcPurTotal();
-      }
-    };
-
-    window.calcPurTotal = function() {
-      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      document.getElementById('pur_total').value = '₹ ' + total.toFixed(2);
-    };
-
-    window.savePurchase = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('pur_rm_code').value;
-      const qty = parseFloat(document.getElementById('pur_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('pur_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('pur_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_purchase_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_supplier: document.getElementById('pur_supplier').value,
-            p_rm_code: code,
-            p_name: document.getElementById('pur_rm_name').value,
-            p_qty: qty,
-            p_unit: document.getElementById('pur_unit').value,
-            p_rate: rate,
-            p_gst: gst,
-            p_total: total,
-            p_batch: document.getElementById('pur_batch').value,
-            p_pdate: document.getElementById('pur_pdate').value || null,
-            p_edate: document.getElementById('pur_edate').value || null,
-            p_remarks: document.getElementById('pur_remarks').value
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to log purchase");
-        }
-
-        document.getElementById('purchaseForm').reset();
-        loadDataFromDb();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    window.saveProduct = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('prd_code').value.trim().toUpperCase();
-      const name = document.getElementById('prd_name').value.trim();
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_product_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_code: code,
-            p_category: document.getElementById('prd_category').value,
-            p_unit: document.getElementById('prd_unit').value,
-            p_name: name,
-            p_rate: parseFloat(document.getElementById('prd_rate').value) || 0,
-            p_gst: parseFloat(document.getElementById('prd_gst').value) || 0,
-            p_opening: parseFloat(document.getElementById('prd_opening').value) || 0,
-            p_reorder: parseFloat(document.getElementById('prd_reorder').value) || 0,
-            p_location: document.getElementById('prd_location').value
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to save product");
-        }
-
-        document.getElementById('prodForm').reset();
-        loadDataFromDb();
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    window.autoFillProductSale = function() {
-      const code = document.getElementById('sale_prd_code').value;
-      const prd = DB.products.find(p => p.code === code);
-      if (prd) {
-        document.getElementById('sale_prd_name').value = prd.name;
-        document.getElementById('sale_unit').value = prd.unit;
-        document.getElementById('sale_rate').value = prd.rate;
-        document.getElementById('sale_gst').value = prd.gst;
-        calcSaleTotal();
-      }
-    };
-
-    window.calcSaleTotal = function() {
-      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      document.getElementById('sale_total').value = '₹ ' + total.toFixed(2);
-    };
-
-    window.saveSale = async function(e) {
-      e.preventDefault();
-      const code = document.getElementById('sale_prd_code').value;
-      const qty = parseFloat(document.getElementById('sale_qty').value) || 0;
-      const rate = parseFloat(document.getElementById('sale_rate').value) || 0;
-      const gst = parseFloat(document.getElementById('sale_gst').value) || 0;
-      const customer = document.getElementById('sale_customer').value.trim();
-      const subtotal = qty * rate;
-      const total = subtotal + (subtotal * (gst / 100));
-      const estimatedCogs = subtotal * 0.60;
-      const grossProfit = subtotal - estimatedCogs;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/insert_sale_secure`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_token: SESSION_TOKEN,
-            p_customer: customer,
-            p_product_code: code,
-            p_name: document.getElementById('sale_prd_name').value,
-            p_qty: qty,
-            p_unit: document.getElementById('sale_unit').value,
-            p_selling_rate: rate,
-            p_gst: gst,
-            p_total_sale: total,
-            p_total_cogs: estimatedCogs,
-            p_gross_profit: grossProfit,
-            p_sale_date: document.getElementById('sale_date').value || new Date().toISOString().slice(0,10),
-            p_remarks: document.getElementById('sale_remarks').value
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Failed to record sale");
-        }
-
-        document.getElementById('salesForm').reset();
-        await loadDataFromDb();
-        if (CURRENT_USER.role !== 'user') {
-          switchTab('dashboard');
-        }
-      } catch (err) {
-        alert("Error: " + err.message);
-      }
-    };
-
-    // --- 7. SECURE DELETE ---
-    window.secureDelete = async function(table, id) {
-      if (!CURRENT_USER || (CURRENT_USER.username !== 'admin' && CURRENT_USER.username !== 'malaya' && CURRENT_USER.role !== 'admin')) {
-        alert("Access Denied: Record deletion is restricted exclusively to Administrators.");
-        return;
-      }
-
-      const pass = prompt(`Administrator Authorization Required\nEnter your personal password (${CURRENT_USER.username}) to confirm deletion:`);
-      if (!pass) return;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/secure_delete_record`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            target_table: table,
-            record_id: id,
-            calling_username: CURRENT_USER.username,
-            user_password: pass
-          })
-        });
-
-        const result = await res.json();
-        if (!res.ok) {
-          throw new Error(result.message || "Authentication failed or unauthorized action.");
-        }
-
-        loadDataFromDb();
-      } catch (err) {
-        alert("Deletion Blocked: " + err.message);
-      }
-    };
-
-    // --- 8. PASSWORD RESET ---
-    window.openResetModal = function() {
-      document.getElementById('reset-modal').classList.remove('hidden');
-      document.getElementById('reset-step-1').classList.remove('hidden');
-      document.getElementById('reset-step-2').classList.add('hidden');
-      document.getElementById('reset-err').classList.add('hidden');
-      document.getElementById('reset-succ').classList.add('hidden');
-      document.getElementById('reset-step-1').reset();
-      document.getElementById('reset-step-2').reset();
-      RESET_STATE.username = null;
-    };
-
-    window.closeResetModal = function() {
-      document.getElementById('reset-modal').classList.add('hidden');
-    };
-
-    window.lookupSecurityQuestion = async function(e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById('rst_username').value.trim().toLowerCase();
-      const errBox = document.getElementById('reset-err');
-      const btn = document.getElementById('btn-lookup-user');
-
-      errBox.classList.add('hidden');
-
-      if (usernameInput === 'admin' || usernameInput === 'malaya') {
-        errBox.textContent = "Access Denied: Root Admin credentials cannot be reset via public recovery.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Finding Profile...`;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/erp_users?username=eq.${usernameInput}&select=username,sec_question`, {
-          headers: getHeaders()
-        });
-        const users = await res.json();
-
-        if (!users || users.length === 0) {
-          throw new Error("Username not found in system directory.");
-        }
-
-        RESET_STATE.username = users[0].username;
-        document.getElementById('disp-sec-question').textContent = users[0].sec_question || "What was the name of your first school?";
-        document.getElementById('reset-step-1').classList.add('hidden');
-        document.getElementById('reset-step-2').classList.remove('hidden');
-      } catch (err) {
-        errBox.textContent = err.message || "Failed to process request.";
-        errBox.classList.remove('hidden');
-      } finally {
-        btn.innerHTML = `Continue`;
-      }
-    };
-
-    window.verifyAnswerAndChangePassword = async function(e) {
-      e.preventDefault();
-      const enteredAnswer = document.getElementById('rst_answer').value.trim();
-      const newPass = document.getElementById('rst_newpass').value.trim();
-      const confPass = document.getElementById('rst_confpass').value.trim();
-      const errBox = document.getElementById('reset-err');
-      const succBox = document.getElementById('reset-succ');
-      const btn = document.getElementById('btn-sub-reset');
-
-      errBox.classList.add('hidden');
-      succBox.classList.add('hidden');
-
-      if (newPass.length < 6) {
-        errBox.textContent = "New password must be at least 6 characters.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      if (newPass !== confPass) {
-        errBox.textContent = "Passwords do not match.";
-        errBox.classList.remove('hidden');
-        return;
-      }
-
-      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Updating Password...`;
-
-      try {
-        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/reset_password_with_security_qa`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            p_username: RESET_STATE.username,
-            p_answer: enteredAnswer,
-            p_new_password: newPass
-          })
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Incorrect answer or verification failed.");
-        }
-
-        succBox.textContent = "Password updated successfully! Redirecting to sign in...";
-        succBox.classList.remove('hidden');
-
-        setTimeout(() => {
-          closeResetModal();
-          document.getElementById('login_username').value = RESET_STATE.username;
-          document.getElementById('login_password').value = "";
-        }, 1800);
-      } catch (err) {
-        errBox.textContent = err.message || "Error updating password.";
-        errBox.classList.remove('hidden');
-      } finally {
-        btn.innerHTML = `Verify & Save New Password`;
-      }
-    };
-
-    // --- 9. TABS & REPORTS ---
-    window.switchTab = function(tabId) {
-      const tabs = ['dashboard', 'rm-master', 'purchase-entry', 'product-master', 'sales-entry', 'reports', 'audit-logs', 'user-mgmt'];
-      tabs.forEach(t => {
-        const sec = document.getElementById('sec-' + t);
-        const btn = document.getElementById('tab-' + t);
-        if (sec) {
-          sec.classList.remove('block');
-          sec.classList.add('hidden');
-        }
-        if (btn) {
-          btn.classList.remove('tab-active');
-          btn.classList.remove('text-slate-700');
-          btn.classList.add('text-slate-500');
-        }
-      });
-
-      const activeSec = document.getElementById('sec-' + tabId);
-      const activeBtn = document.getElementById('tab-' + tabId);
-      if (activeSec) {
-        activeSec.classList.remove('hidden');
-        activeSec.classList.add('block');
-      }
-      if (activeBtn) {
-        activeBtn.classList.add('tab-active');
-        activeBtn.classList.add('text-slate-700');
-        activeBtn.classList.remove('text-slate-500');
-      }
-
-      if (tabId === 'reports') generateReport();
-      if (tabId === 'audit-logs') renderAuditLogs();
-    };
-
-    window.generateReport = function() {
-      const type = document.getElementById('report_type').value;
-      const year = document.getElementById('report_year').value;
-      const canvas = document.getElementById('print-canvas');
-
-      const filterByYear = (dateStr) => {
-        if (!dateStr || year === 'ALL') return true;
-        return dateStr.startsWith(year);
+      const payload = {
+        p_token: token,
+        p_code: document.getElementById('rm-code').value.trim().toUpperCase(),
+        p_name: document.getElementById('rm-name').value.trim(),
+        p_category: document.getElementById('rm-category').value.trim(),
+        p_unit: document.getElementById('rm-unit').value.trim().toUpperCase(),
+        p_supplier: document.getElementById('rm-supplier').value.trim(),
+        p_rate: parseFloat(document.getElementById('rm-rate').value) || 0,
+        p_gst: parseFloat(document.getElementById('rm-gst').value) || 0,
+        p_opening_stock: parseFloat(document.getElementById('rm-opening-stock').value) || 0,
+        p_reorder: parseFloat(document.getElementById('rm-reorder').value) || 0,
+        p_location: document.getElementById('rm-location').value.trim(),
+        p_batch: document.getElementById('rm-batch').value.trim()
       };
 
-      const filteredPurchases = DB.purchases.filter(p => filterByYear(p.pdate));
-      const filteredSales = DB.sales.filter(s => filterByYear(s.sale_date));
+      try {
+        const res = await fetch(`${SUPABASE_BASE_URL}/rest/v1/rpc/save_raw_material_secure`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload)
+        });
 
-      const totalPur = filteredPurchases.reduce((a, b) => a + Number(b.total || 0), 0);
-      const totalSal = filteredSales.reduce((a, b) => a + Number(b.total_sale || 0), 0);
-      const grossProf = filteredSales.reduce((a, b) => a + Number(b.gross_profit || (b.total_sale * 0.4)), 0);
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Failed to save raw material');
+        }
 
-      let html = `
-        <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-center">
-          <div class="flex items-center gap-3.5">
-            <img src="logo.png" onerror="this.onerror=null; this.src='https://i.ibb.co/3k5Fk4F/lz-logo.png';" alt="LZ Logo" class="h-12 w-12 rounded-lg border border-slate-300 object-cover bg-black" />
-            <div>
-              <h1 class="text-2xl font-black tracking-wider text-slate-900">LZEBRA <span class="text-emerald-600 font-extrabold">ERP</span></h1>
-              <p class="text-xs text-slate-500 font-medium">Enterprise Management & Auditing Statement</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <p class="text-sm font-bold text-emerald-700 uppercase tracking-wider">${type.toUpperCase()} REPORT</p>
-            <p class="text-xs text-slate-500">Period: <span class="font-bold text-slate-800">${year === 'ALL' ? 'All-Time Historical' : `Fiscal Year ${year}`}</span></p>
-            <p class="text-[10px] text-slate-400">Generated: ${new Date().toLocaleString()}</p>
-          </div>
-        </div>
-      `;
-
-      if (type === 'summary') {
-        html += `
-          <div class="grid grid-cols-3 gap-4 mb-6">
-            <div class="p-4 border rounded-lg bg-slate-50">
-              <span class="text-xs text-slate-500 font-bold uppercase">Total Purchases (RM)</span>
-              <p class="text-xl font-bold text-slate-900 mt-1">₹ ${totalPur.toLocaleString()}</p>
-              <p class="text-[10px] text-slate-500">${filteredPurchases.length} inward lots</p>
-            </div>
-            <div class="p-4 border rounded-lg bg-slate-50">
-              <span class="text-xs text-slate-500 font-bold uppercase">Total Sales Revenue</span>
-              <p class="text-xl font-bold text-emerald-700 mt-1">₹ ${totalSal.toLocaleString()}</p>
-              <p class="text-[10px] text-slate-500">${filteredSales.length} invoices cleared</p>
-            </div>
-            <div class="p-4 border rounded-lg bg-emerald-50 border-emerald-200">
-              <span class="text-xs text-emerald-800 font-bold uppercase">Estimated Gross Profit</span>
-              <p class="text-xl font-bold text-emerald-700 mt-1">₹ ${grossProf.toLocaleString()}</p>
-              <p class="text-[10px] text-emerald-600 font-semibold">Margin: ${totalSal > 0 ? ((grossProf/totalSal)*100).toFixed(1) : 0}%</p>
-            </div>
-          </div>
-        `;
+        alert('✅ Raw Material saved successfully to cloud database.');
+        e.target.reset();
+        fetchAllData();
+      } catch (err) {
+        alert('Save Error: ' + err.message);
       }
+    }
 
-      html += `
-        <div class="mt-8 pt-6 border-t flex justify-between text-xs text-slate-500">
-          <div>Audited & Verified By: ___________________</div>
-          <div>Authorized Signatory (LZebra ERP): ___________________</div>
-        </div>
-      `;
-
-      canvas.innerHTML = html;
-    };
-
+    // Initial Load
     window.addEventListener('DOMContentLoaded', () => {
-      const rememberedUser = localStorage.getItem('LZEBRA_REMEMBERED_USERNAME');
-      if (rememberedUser) {
-        document.getElementById('login_username').value = rememberedUser;
-      }
-      document.getElementById('login_password').value = '';
-      applyUserSession();
-      if (SESSION_TOKEN) loadDataFromDb();
+      setupUserInterface();
+      fetchAllData();
     });
   </script>
 </body>
